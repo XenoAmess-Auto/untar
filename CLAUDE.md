@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-目前主线在rust版本, 原始java版本只做参考
+目前主线在rust版本, 原始java版本只做参考, 不做后续更新
 
 ## Project Overview
 
