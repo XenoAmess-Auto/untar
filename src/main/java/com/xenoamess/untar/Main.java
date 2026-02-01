@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -21,26 +23,41 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 
-@Command(name = "untar", description = "解压 tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip 包")
+@Command(name = "untar", description = "%n%@Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages")
 public class Main implements Callable<Integer> {
 
-    @Option(names = {"-C", "--directory"}, description = "解压到指定目录", paramLabel = "DIR")
+    private static final ResourceBundle MESSAGES;
+
+    static {
+        Locale locale = Locale.getDefault();
+        if (locale.getLanguage().equals("zh")) {
+            MESSAGES = ResourceBundle.getBundle("Messages", Locale.CHINA);
+        } else {
+            MESSAGES = ResourceBundle.getBundle("Messages", Locale.ENGLISH);
+        }
+    }
+
+    private String msg(String key) {
+        return MESSAGES.getString(key);
+    }
+
+    @Option(names = {"-C", "--directory"}, descriptionKey = "directory", paramLabel = "DIR")
     private String directory = ".";
 
-    @Option(names = {"-v", "--verbose"}, description = "显示详细信息")
+    @Option(names = {"-v", "--verbose"}, descriptionKey = "verbose")
     private boolean verbose = true;
 
-    @Option(names = {"-h", "--help"}, usageHelp = true, description = "显示帮助信息")
+    @Option(names = {"-h", "--help"}, usageHelp = true, descriptionKey = "help")
     private boolean help = false;
 
-    @Parameters(paramLabel = "FILE", description = "要解压的文件")
+    @Parameters(paramLabel = "FILE", descriptionKey = "file")
     private String archiveFile;
 
     @Override
     public Integer call() throws Exception {
         File file = new File(archiveFile);
         if (!file.exists()) {
-            System.err.println("错误: 文件不存在: " + archiveFile);
+            System.err.println(msg("error.fileNotFound") + ": " + archiveFile);
             return 1;
         }
 
@@ -55,10 +72,10 @@ public class Main implements Callable<Integer> {
                 tryExtractAllFormats(file, destDir);
             }
             if (verbose) {
-                System.out.println("解压完成: " + file.getName());
+                System.out.println(msg("done") + ": " + file.getName());
             }
         } catch (IOException e) {
-            System.err.println("解压失败: " + e.getMessage());
+            System.err.println(msg("error.extractFailed") + ": " + e.getMessage());
             return 1;
         }
         return 0;
@@ -108,7 +125,7 @@ public class Main implements Callable<Integer> {
         if (tryExtractTar(file, destDir)) {
             return;
         }
-        throw new IOException("无法识别文件格式，所有支持的格式都已尝试");
+        throw new IOException(msg("error.unsupportedFormat"));
     }
 
     private boolean tryExtractZip(File file, Path destDir) {
@@ -210,7 +227,7 @@ public class Main implements Callable<Integer> {
                 }
             }
             if (verbose) {
-                System.out.println("解压: " + entry.getName());
+                System.out.println(msg("extracting") + ": " + entry.getName());
             }
         }
     }
@@ -234,7 +251,7 @@ public class Main implements Callable<Integer> {
                     }
                 }
                 if (verbose) {
-                    System.out.println("解压: " + entry.getName());
+                    System.out.println(msg("extracting") + ": " + entry.getName());
                 }
             }
         }
