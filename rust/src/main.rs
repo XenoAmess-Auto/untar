@@ -75,11 +75,31 @@ Supported formats:
   .tar, .tar.gz, .tgz, .tar.xz, .tar.bz2, .zip
 ";
 
+fn format_size(size: u64) -> String {
+    if size < 1024 {
+        format!("{} B", size)
+    } else if size < 1024 * 1024 {
+        format!("{:.1} KB", size as f64 / 1024.0)
+    } else if size < 1024 * 1024 * 1024 {
+        format!("{:.1} MB", size as f64 / (1024.0 * 1024.0))
+    } else {
+        format!("{:.1} GB", size as f64 / (1024.0 * 1024.0 * 1024.0))
+    }
+}
+
 fn extract_archive(file_path: &str, output_dir: &str, verbose: bool) -> Result<()> {
     let file = File::open(file_path)
         .with_context(|| format!("Cannot open file: {}", file_path))?;
 
     let file_name_lower = file_path.to_lowercase();
+
+    // Get file size for progress
+    let file_size = file.metadata()?.len();
+
+    if verbose {
+        println!("Archive: {}", file_path);
+        println!("Size: {}", format_size(file_size));
+    }
 
     // Create output directory
     fs::create_dir_all(output_dir)
@@ -126,12 +146,15 @@ fn extract_tar<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Result<()
 
 fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Result<()> {
     let mut archive = tar::Archive::new(reader);
+    let mut entry_count = 0u64;
 
     for entry in archive.entries()? {
         let mut entry = entry?;
+        entry_count += 1;
 
         let path = entry.path()?.into_owned();
         let entry_path = PathBuf::from(output_dir).join(&path);
+        let size = entry.size();
 
         if let Some(parent) = entry_path.parent() {
             if !parent.exists() {
@@ -141,12 +164,12 @@ fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Re
 
         if entry.header().entry_type() == tar::EntryType::Directory {
             if verbose {
-                println!("Extracting: {}", path.display());
+                println!("[{:?}] {}", entry_count, path.display());
             }
             fs::create_dir_all(&entry_path)?;
         } else {
             if verbose {
-                println!("Extracting: {}", path.display());
+                println!("[{:?}] {} ({})", entry_count, path.display(), format_size(size));
             }
 
             let mut file = File::create(&entry_path)?;
@@ -165,16 +188,27 @@ fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Re
         }
     }
 
+    if verbose {
+        println!("Total files: {}", entry_count);
+    }
+
     Ok(())
 }
 
 fn extract_zip<R: Read + Seek>(reader: R, output_dir: &str, verbose: bool) -> Result<()> {
     let mut archive = zip::ZipArchive::new(reader)?;
+    let total_count = archive.len();
 
-    for i in 0..archive.len() {
+    if verbose {
+        println!("Total files: {}", total_count);
+    }
+
+    for i in 0..total_count {
         let mut entry = archive.by_index(i)?;
+        let name = entry.name().to_string();
+        let size = entry.size();
 
-        let entry_path = PathBuf::from(output_dir).join(entry.name());
+        let entry_path = PathBuf::from(output_dir).join(&name);
 
         if let Some(parent) = entry_path.parent() {
             if !parent.exists() {
@@ -184,12 +218,12 @@ fn extract_zip<R: Read + Seek>(reader: R, output_dir: &str, verbose: bool) -> Re
 
         if entry.is_dir() {
             if verbose {
-                println!("Extracting: {}", entry.name());
+                println!("[{:?}] {}", i + 1, name);
             }
             fs::create_dir_all(&entry_path)?;
         } else {
             if verbose {
-                println!("Extracting: {}", entry.name());
+                println!("[{:?}] {} ({})", i + 1, name, format_size(size));
             }
 
             let mut file = File::create(&entry_path)?;
