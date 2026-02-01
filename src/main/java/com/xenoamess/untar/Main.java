@@ -74,8 +74,11 @@ public class Main implements Callable<Integer> {
             if (verbose) {
                 System.out.println(msg("done") + ": " + file.getName());
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.err.println(msg("error.extractFailed") + ": " + e.getMessage());
+            if (verbose) {
+                e.printStackTrace();
+            }
             return 1;
         }
         return 0;
