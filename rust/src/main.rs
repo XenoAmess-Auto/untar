@@ -16,8 +16,8 @@ struct Args {
     #[arg(short = 'd', long, value_name = "DIR")]
     directory: Option<String>,
 
-    /// Verbose mode
-    #[arg(short, long)]
+    /// Verbose mode (enabled by default)
+    #[arg(short, long, default_value_t = true)]
     verbose: bool,
 
     /// Show help
