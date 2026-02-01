@@ -28,7 +28,7 @@ public class Main implements Callable<Integer> {
     private String directory = ".";
 
     @Option(names = {"-v", "--verbose"}, description = "显示详细信息")
-    private boolean verbose = false;
+    private boolean verbose = true;
 
     @Option(names = {"-h", "--help"}, usageHelp = true, description = "显示帮助信息")
     private boolean help = false;
@@ -49,19 +49,10 @@ public class Main implements Callable<Integer> {
 
         String fileName = file.getName().toLowerCase();
         try {
-            if (fileName.endsWith(".tar.gz") || fileName.endsWith(".tgz")) {
-                extractTarGz(file, destDir);
-            } else if (fileName.endsWith(".tar.xz")) {
-                extractTarXz(file, destDir);
-            } else if (fileName.endsWith(".tar.bz2")) {
-                extractTarBz2(file, destDir);
-            } else if (fileName.endsWith(".zip")) {
-                extractZip(file, destDir);
-            } else if (fileName.endsWith(".tar")) {
-                extractTar(file, destDir);
-            } else {
-                System.err.println("错误: 不支持的文件格式: " + fileName);
-                return 1;
+            // 优先使用后缀名对应的解压方式
+            if (!tryExtractBySuffix(file, destDir, fileName)) {
+                // 如果后缀名方式失败，尝试所有支持的格式
+                tryExtractAllFormats(file, destDir);
             }
             if (verbose) {
                 System.out.println("解压完成: " + file.getName());
@@ -71,6 +62,98 @@ public class Main implements Callable<Integer> {
             return 1;
         }
         return 0;
+    }
+
+    /**
+     * 优先使用后缀名对应的解压方式
+     * @return true 如果成功解压，false 如果后缀名不匹配或解压失败
+     */
+    private boolean tryExtractBySuffix(File file, Path destDir, String fileName) throws IOException {
+        if (fileName.endsWith(".tar.gz") || fileName.endsWith(".tgz")) {
+            extractTarGz(file, destDir);
+            return true;
+        } else if (fileName.endsWith(".tar.xz")) {
+            extractTarXz(file, destDir);
+            return true;
+        } else if (fileName.endsWith(".tar.bz2")) {
+            extractTarBz2(file, destDir);
+            return true;
+        } else if (fileName.endsWith(".zip")) {
+            extractZip(file, destDir);
+            return true;
+        } else if (fileName.endsWith(".tar")) {
+            extractTar(file, destDir);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 尝试所有支持的压缩格式
+     */
+    private void tryExtractAllFormats(File file, Path destDir) throws IOException {
+        // 按照常见程度排序尝试：zip, tar.gz, tar.bz2, tar.xz, tar
+        if (tryExtractZip(file, destDir)) {
+            return;
+        }
+        if (tryExtractTarGz(file, destDir)) {
+            return;
+        }
+        if (tryExtractTarBz2(file, destDir)) {
+            return;
+        }
+        if (tryExtractTarXz(file, destDir)) {
+            return;
+        }
+        if (tryExtractTar(file, destDir)) {
+            return;
+        }
+        throw new IOException("无法识别文件格式，所有支持的格式都已尝试");
+    }
+
+    private boolean tryExtractZip(File file, Path destDir) {
+        try {
+            extractZip(file, destDir);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean tryExtractTarGz(File file, Path destDir) {
+        try {
+            extractTarGz(file, destDir);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean tryExtractTarBz2(File file, Path destDir) {
+        try {
+            extractTarBz2(file, destDir);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean tryExtractTarXz(File file, Path destDir) {
+        try {
+            extractTarXz(file, destDir);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean tryExtractTar(File file, Path destDir) {
+        try {
+            extractTar(file, destDir);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void extractTarGz(File file, Path destDir) throws IOException {
