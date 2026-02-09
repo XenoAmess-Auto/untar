@@ -16,9 +16,9 @@ struct Args {
     #[arg(short = 'd', long, value_name = "DIR")]
     directory: Option<String>,
 
-    /// Verbose mode (enabled by default)
-    #[arg(short, long, default_value_t = true)]
-    verbose: bool,
+    /// Quiet mode (suppress output)
+    #[arg(short, long)]
+    quiet: bool,
 
     /// Show help
     #[arg(short, long)]
@@ -46,18 +46,18 @@ fn main() {
         }
     };
 
-    let verbose = args.verbose;
+    let quiet = args.quiet;
     let directory = args.directory.unwrap_or_else(|| ".".to_string());
 
-    if let Err(e) = extract_archive(&file, &directory, verbose) {
+    if let Err(e) = extract_archive(&file, &directory, quiet) {
         eprintln!("Error: {}", e);
-        if verbose {
+        if !quiet {
             eprintln!("{:?}", e);
         }
         exit(1);
     }
 
-    if verbose {
+    if !quiet {
         println!("Done: {}", file);
     }
 }
@@ -68,7 +68,7 @@ Usage: untar [OPTIONS] FILE
 
 Options:
   -d, --directory DIR    Extract files into DIR (default: current directory)
-  -v, --verbose          Show progress
+  -q, --quiet            Suppress output
   -h, --help             Show this help
 
 Supported formats:
@@ -87,7 +87,7 @@ fn format_size(size: u64) -> String {
     }
 }
 
-fn extract_archive(file_path: &str, output_dir: &str, verbose: bool) -> Result<()> {
+fn extract_archive(file_path: &str, output_dir: &str, quiet: bool) -> Result<()> {
     let file = File::open(file_path).with_context(|| format!("Cannot open file: {}", file_path))?;
 
     let file_name_lower = file_path.to_lowercase();
@@ -95,7 +95,7 @@ fn extract_archive(file_path: &str, output_dir: &str, verbose: bool) -> Result<(
     // Get file size for progress
     let file_size = file.metadata()?.len();
 
-    if verbose {
+    if !quiet {
         println!("Archive: {}", file_path);
         println!("Size: {}", format_size(file_size));
     }
@@ -106,15 +106,15 @@ fn extract_archive(file_path: &str, output_dir: &str, verbose: bool) -> Result<(
 
     // Detect format by extension and extract
     if file_name_lower.ends_with(".tar.gz") || file_name_lower.ends_with(".tgz") {
-        extract_tar_gz(file, output_dir, verbose)?;
+        extract_tar_gz(file, output_dir, quiet)?;
     } else if file_name_lower.ends_with(".tar.xz") {
-        extract_tar_xz(file, output_dir, verbose)?;
+        extract_tar_xz(file, output_dir, quiet)?;
     } else if file_name_lower.ends_with(".tar.bz2") {
-        extract_tar_bz2(file, output_dir, verbose)?;
+        extract_tar_bz2(file, output_dir, quiet)?;
     } else if file_name_lower.ends_with(".zip") {
-        extract_zip(file, output_dir, verbose)?;
+        extract_zip(file, output_dir, quiet)?;
     } else if file_name_lower.ends_with(".tar") {
-        extract_tar(file, output_dir, verbose)?;
+        extract_tar(file, output_dir, quiet)?;
     } else {
         return Err(anyhow!(
             "Unsupported archive format. Please use a known extension (.tar, .tar.gz, .tgz, .tar.xz, .tar.bz2, .zip)"
@@ -124,26 +124,26 @@ fn extract_archive(file_path: &str, output_dir: &str, verbose: bool) -> Result<(
     Ok(())
 }
 
-fn extract_tar_gz<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Result<()> {
+fn extract_tar_gz<R: Read>(reader: R, output_dir: &str, quiet: bool) -> Result<()> {
     let decoder = flate2::read::GzDecoder::new(reader);
-    extract_tar_reader(decoder, output_dir, verbose)
+    extract_tar_reader(decoder, output_dir, quiet)
 }
 
-fn extract_tar_xz<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Result<()> {
+fn extract_tar_xz<R: Read>(reader: R, output_dir: &str, quiet: bool) -> Result<()> {
     let decoder = xz2::read::XzDecoder::new(reader);
-    extract_tar_reader(decoder, output_dir, verbose)
+    extract_tar_reader(decoder, output_dir, quiet)
 }
 
-fn extract_tar_bz2<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Result<()> {
+fn extract_tar_bz2<R: Read>(reader: R, output_dir: &str, quiet: bool) -> Result<()> {
     let decoder = bzip2::read::BzDecoder::new(reader);
-    extract_tar_reader(decoder, output_dir, verbose)
+    extract_tar_reader(decoder, output_dir, quiet)
 }
 
-fn extract_tar<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Result<()> {
-    extract_tar_reader(BufReader::new(reader), output_dir, verbose)
+fn extract_tar<R: Read>(reader: R, output_dir: &str, quiet: bool) -> Result<()> {
+    extract_tar_reader(BufReader::new(reader), output_dir, quiet)
 }
 
-fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Result<()> {
+fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, quiet: bool) -> Result<()> {
     let mut archive = tar::Archive::new(reader);
     let mut entry_count = 0u64;
 
@@ -162,12 +162,12 @@ fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Re
         }
 
         if entry.header().entry_type() == tar::EntryType::Directory {
-            if verbose {
+            if !quiet {
                 println!("[{:?}] {}", entry_count, path.display());
             }
             fs::create_dir_all(&entry_path)?;
         } else {
-            if verbose {
+            if !quiet {
                 println!(
                     "[{:?}] {} ({})",
                     entry_count,
@@ -192,18 +192,18 @@ fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, verbose: bool) -> Re
         }
     }
 
-    if verbose {
+    if !quiet {
         println!("Total files: {}", entry_count);
     }
 
     Ok(())
 }
 
-fn extract_zip<R: Read + Seek>(reader: R, output_dir: &str, verbose: bool) -> Result<()> {
+fn extract_zip<R: Read + Seek>(reader: R, output_dir: &str, quiet: bool) -> Result<()> {
     let mut archive = zip::ZipArchive::new(reader)?;
     let total_count = archive.len();
 
-    if verbose {
+    if !quiet {
         println!("Total files: {}", total_count);
     }
 
@@ -221,12 +221,12 @@ fn extract_zip<R: Read + Seek>(reader: R, output_dir: &str, verbose: bool) -> Re
         }
 
         if entry.is_dir() {
-            if verbose {
+            if !quiet {
                 println!("[{:?}] {}", i + 1, name);
             }
             fs::create_dir_all(&entry_path)?;
         } else {
-            if verbose {
+            if !quiet {
                 println!("[{:?}] {} ({})", i + 1, name, format_size(size));
             }
 

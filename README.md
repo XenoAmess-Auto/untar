@@ -11,7 +11,7 @@ A lightweight, fast Linux command-line tool for extracting tar archives with sup
 - 📦 **Multiple Formats** - Support for `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`, `.zip`
 - 🔧 **Simple Usage** - Intuitive command-line interface
 - 💾 **Preserves Permissions** - Unix file permissions are preserved during extraction
-- 📊 **Progress Display** - Verbose mode shows extraction progress with file sizes
+- 📊 **Progress Display** - Shows extraction progress with file sizes by default (use `-q` to suppress)
 
 ## Installation
 
@@ -70,7 +70,7 @@ Usage: untar [OPTIONS] FILE
 
 Options:
   -d, --directory DIR    Extract files into DIR (default: current directory)
-  -v, --verbose          Show progress (enabled by default)
+  -q, --quiet            Suppress output (no progress display)
   -h, --help             Show help
 
 Arguments:
@@ -80,14 +80,17 @@ Arguments:
 ### Examples
 
 ```bash
-# Extract a tar.gz file
+# Extract a tar.gz file (with progress output)
 untar myproject.tar.gz
 
-# Extract to a specific directory with verbose output
-untar -d ./extracted -v backup.tar.xz
+# Extract quietly (suppress output)
+untar -q myproject.tar.gz
 
-# Extract a ZIP file
-untar archive.zip
+# Extract to a specific directory
+untar -d ./extracted backup.tar.xz
+
+# Extract a ZIP file quietly
+untar -q archive.zip
 ```
 
 ## Building
