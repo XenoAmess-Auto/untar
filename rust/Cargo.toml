@@ -15,7 +15,7 @@ bzip2 = "0.4"
 # GZip compression support
 flate2 = { version = "1.0", default-features = false, features = ["zlib"] }
 # Zip archive support
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "7", default-features = false, features = ["deflate"] }
 
 # Use anyhow for error handling (minimal overhead)
 anyhow = "1.0"
