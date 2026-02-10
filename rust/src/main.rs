@@ -7,6 +7,8 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::process::exit;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages
 #[derive(Parser, Debug)]
 #[command(name = "untar")]
@@ -24,6 +26,10 @@ struct Args {
     #[arg(short, long)]
     help: bool,
 
+    /// Show version
+    #[arg(short = 'v', long)]
+    version: bool,
+
     /// Archive file to extract
     #[arg(value_name = "FILE", index = 1)]
     file: Option<String>,
@@ -32,8 +38,13 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    if args.version {
+        println!("untar {}", VERSION);
+        exit(0);
+    }
+
     if args.help {
-        print!("{}", HELP);
+        println!("{}", HELP);
         exit(0);
     }
 
@@ -41,7 +52,7 @@ fn main() {
         Some(f) => f,
         None => {
             eprintln!("Error: No archive file specified");
-            print!("{}", HELP);
+            println!("{}", HELP);
             exit(1);
         }
     };
@@ -62,14 +73,15 @@ fn main() {
     }
 }
 
-const HELP: &str = "untar - Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages
+const HELP: &str = "untar 1.0.1 - Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages
 
 Usage: untar [OPTIONS] FILE
 
 Options:
   -d, --directory DIR    Extract files into DIR (default: current directory)
   -q, --quiet            Suppress output
-  -h, --help             Show this help
+  -v, --version          Show version
+  -h, --help             Show help
 
 Supported formats:
   .tar, .tar.gz, .tgz, .tar.xz, .tar.bz2, .zip
