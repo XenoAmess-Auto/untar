@@ -244,6 +244,7 @@ mod tests {
     use std::io::Write;
     use tempfile::TempDir;
 
+    #[allow(dead_code)]
     fn create_test_file(dir: &std::path::Path, name: &str, content: &[u8]) -> PathBuf {
         let path = dir.join(name);
         if let Some(parent) = path.parent() {
@@ -267,7 +268,7 @@ mod tests {
 
         let mut header2 = tar::Header::new_gnu();
         header2.set_path("subdir/nested.txt").unwrap();
-        header2.set_size(16);
+        header2.set_size(15);
         header2.set_mode(0o644);
         header2.set_cksum();
         tar.append(&header2, "Nested content!".as_bytes()).unwrap();
@@ -291,10 +292,11 @@ mod tests {
 
         let mut header2 = tar::Header::new_gnu();
         header2.set_path("data/config.json").unwrap();
-        header2.set_size(17);
+        header2.set_size(16);
         header2.set_mode(0o644);
         header2.set_cksum();
-        tar.append(&header2, b"{\"key\": \"value\"}".as_slice()).unwrap();
+        tar.append(&header2, b"{\"key\": \"value\"}".as_slice())
+            .unwrap();
 
         tar.finish().unwrap();
         tgz_path
@@ -332,7 +334,7 @@ mod tests {
 
         let mut header2 = tar::Header::new_gnu();
         header2.set_path("readme.md").unwrap();
-        header2.set_size(9);
+        header2.set_size(8);
         header2.set_mode(0o644);
         header2.set_cksum();
         tar.append(&header2, "# README".as_bytes()).unwrap();
@@ -349,7 +351,7 @@ mod tests {
 
         let mut header = tar::Header::new_gnu();
         header.set_path("bz2_test.txt").unwrap();
-        header.set_size(16);
+        header.set_size(15);
         header.set_mode(0o644);
         header.set_cksum();
         tar.append(&header, "BZ2 compressed!".as_bytes()).unwrap();
@@ -446,10 +448,7 @@ mod tests {
         )
         .unwrap();
 
-        verify_extracted_content(
-            &output_dir,
-            &[("archive.txt", "TGZ archive!")],
-        );
+        verify_extracted_content(&output_dir, &[("archive.txt", "TGZ archive!")]);
     }
 
     #[test]
@@ -484,10 +483,7 @@ mod tests {
         )
         .unwrap();
 
-        verify_extracted_content(
-            &output_dir,
-            &[("bz2_test.txt", "BZ2 compressed!")],
-        );
+        verify_extracted_content(&output_dir, &[("bz2_test.txt", "BZ2 compressed!")]);
     }
 
     #[test]
