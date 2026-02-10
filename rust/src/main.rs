@@ -294,7 +294,7 @@ mod tests {
         header2.set_size(17);
         header2.set_mode(0o644);
         header2.set_cksum();
-        tar.append(&header2, b"{\"key\": \"value\"}").unwrap();
+        tar.append(&header2, b"{\"key\": \"value\"}".as_slice()).unwrap();
 
         tar.finish().unwrap();
         tgz_path
@@ -380,7 +380,12 @@ mod tests {
             let full_path = output_dir.join(file_path);
             assert!(full_path.exists(), "File should exist: {}", file_path);
             let content = fs::read_to_string(&full_path).unwrap();
-            assert_eq!(content, *expected_content, "Content mismatch for {}", file_path);
+            assert_eq!(
+                content,
+                *expected_content,
+                "Content mismatch for {}",
+                file_path
+            );
         }
     }
 
@@ -390,12 +395,20 @@ mod tests {
         let tar_path = create_test_tar(temp_dir.path());
         let output_dir = temp_dir.path().join("output_tar");
 
-        extract_archive(tar_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+        extract_archive(
+            tar_path.to_str().unwrap(),
+            output_dir.to_str().unwrap(),
+            true,
+        )
+        .unwrap();
 
-        verify_extracted_content(&output_dir, &[
-            ("test.txt", "Hello, World!"),
-            ("subdir/nested.txt", "Nested content!"),
-        ]);
+        verify_extracted_content(
+            &output_dir,
+            &[
+                ("test.txt", "Hello, World!"),
+                ("subdir/nested.txt", "Nested content!"),
+            ],
+        );
     }
 
     #[test]
@@ -404,12 +417,20 @@ mod tests {
         let tgz_path = create_test_tar_gz(temp_dir.path());
         let output_dir = temp_dir.path().join("output_tgz");
 
-        extract_archive(tgz_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+        extract_archive(
+            tgz_path.to_str().unwrap(),
+            output_dir.to_str().unwrap(),
+            true,
+        )
+        .unwrap();
 
-        verify_extracted_content(&output_dir, &[
-            ("test.txt", "Hello, World!"),
-            ("data/config.json", "{\"key\": \"value\"}"),
-        ]);
+        verify_extracted_content(
+            &output_dir,
+            &[
+                ("test.txt", "Hello, World!"),
+                ("data/config.json", "{\"key\": \"value\"}"),
+            ],
+        );
     }
 
     #[test]
@@ -418,11 +439,17 @@ mod tests {
         let tgz_path = create_test_tgz(temp_dir.path());
         let output_dir = temp_dir.path().join("output_tgz2");
 
-        extract_archive(tgz_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+        extract_archive(
+            tgz_path.to_str().unwrap(),
+            output_dir.to_str().unwrap(),
+            true,
+        )
+        .unwrap();
 
-        verify_extracted_content(&output_dir, &[
-            ("archive.txt", "TGZ archive!"),
-        ]);
+        verify_extracted_content(
+            &output_dir,
+            &[("archive.txt", "TGZ archive!")],
+        );
     }
 
     #[test]
@@ -431,12 +458,17 @@ mod tests {
         let txz_path = create_test_tar_xz(temp_dir.path());
         let output_dir = temp_dir.path().join("output_txz");
 
-        extract_archive(txz_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+        extract_archive(
+            txz_path.to_str().unwrap(),
+            output_dir.to_str().unwrap(),
+            true,
+        )
+        .unwrap();
 
-        verify_extracted_content(&output_dir, &[
-            ("xz_test.txt", "XZ compressed!"),
-            ("readme.md", "# README"),
-        ]);
+        verify_extracted_content(
+            &output_dir,
+            &[("xz_test.txt", "XZ compressed!"), ("readme.md", "# README")],
+        );
     }
 
     #[test]
@@ -445,11 +477,17 @@ mod tests {
         let tbz2_path = create_test_tar_bz2(temp_dir.path());
         let output_dir = temp_dir.path().join("output_tbz2");
 
-        extract_archive(tbz2_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+        extract_archive(
+            tbz2_path.to_str().unwrap(),
+            output_dir.to_str().unwrap(),
+            true,
+        )
+        .unwrap();
 
-        verify_extracted_content(&output_dir, &[
-            ("bz2_test.txt", "BZ2 compressed!"),
-        ]);
+        verify_extracted_content(
+            &output_dir,
+            &[("bz2_test.txt", "BZ2 compressed!")],
+        );
     }
 
     #[test]
@@ -458,12 +496,20 @@ mod tests {
         let zip_path = create_test_zip(temp_dir.path());
         let output_dir = temp_dir.path().join("output_zip");
 
-        extract_archive(zip_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+        extract_archive(
+            zip_path.to_str().unwrap(),
+            output_dir.to_str().unwrap(),
+            true,
+        )
+        .unwrap();
 
-        verify_extracted_content(&output_dir, &[
-            ("zip_test.txt", "ZIP archive content"),
-            ("docs/info.txt", "Documentation file"),
-        ]);
+        verify_extracted_content(
+            &output_dir,
+            &[
+                ("zip_test.txt", "ZIP archive content"),
+                ("docs/info.txt", "Documentation file"),
+            ],
+        );
     }
 
     #[test]
@@ -472,9 +518,16 @@ mod tests {
         let file_path = temp_dir.path().join("test.rar");
         fs::write(&file_path, "fake content").unwrap();
 
-        let result = extract_archive(file_path.to_str().unwrap(), temp_dir.path().join("out").to_str().unwrap(), true);
+        let result = extract_archive(
+            file_path.to_str().unwrap(),
+            temp_dir.path().join("out").to_str().unwrap(),
+            true,
+        );
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unsupported archive format"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unsupported archive format"));
     }
 
     #[test]
