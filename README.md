@@ -2,18 +2,44 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
+[![CI](https://github.com/XenoAmess-bot/untar/actions/workflows/ci.yml/badge.svg)](https://github.com/XenoAmess-bot/untar/actions)
+[![Release](https://github.com/XenoAmess-bot/untar/actions/workflows/release.yml/badge.svg)](https://github.com/XenoAmess-bot/untar/releases)
 
-A lightweight, fast Linux command-line tool for extracting tar archives with support for multiple compression formats.
+A lightweight, fast command-line tool for extracting tar archives with support for multiple compression formats.
 
 ## Features
 
 - 🚀 **Fast & Lightweight** - Written in Rust with optimized release builds
 - 📦 **Multiple Formats** - Support for `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`, `.zip`
+- 🖥️ **Cross-Platform** - Linux (x86_64, ARM64) and Windows (x86_64) support
 - 🔧 **Simple Usage** - Intuitive command-line interface
 - 💾 **Preserves Permissions** - Unix file permissions are preserved during extraction
 - 📊 **Progress Display** - Shows extraction progress with file sizes by default (use `-q` to suppress)
 
 ## Installation
+
+### Pre-built Binaries
+
+Download pre-built binaries from the [Releases](https://github.com/XenoAmess-bot/untar/releases) page.
+
+Available builds:
+- `untar-x86_64-linux-gnu` - Linux x86_64 (glibc)
+- `untar-x86_64-linux-musl` - Linux x86_64 (static musl)
+- `untar-aarch64-linux-musl` - Linux ARM64 (static musl)
+- `untar-x86_64-windows` - Windows x86_64
+
+### Debian/Ubuntu (.deb package)
+
+Download the `.deb` package from [Releases](https://github.com/XenoAmess-bot/untar/releases) and install:
+
+```bash
+sudo dpkg -i untar_*.deb
+```
+
+Or install dependencies automatically:
+```bash
+sudo apt install ./untar_*.deb
+```
 
 ### From Source (Rust)
 
@@ -117,25 +143,31 @@ cargo test
 
 ```
 untar/
-├── rust/           # Main Rust implementation (actively maintained)
+├── rust/                    # Main Rust implementation (actively maintained)
 │   ├── Cargo.toml
 │   └── src/
 │       └── main.rs
-├── java/           # Java reference implementation
+├── java/                    # Java reference implementation
 │   ├── pom.xml
 │   └── src/
-└── .github/        # GitHub Actions workflows
+├── .github/
+│   ├── workflows/           # CI/CD workflows
+│   │   ├── ci.yml           # Build and test
+│   │   ├── release.yml      # Release builds (multi-platform)
+│   │   └── build-deb.yml    # Debian package builder
+│   └── dependabot.yml       # Automated dependency updates
+└── LICENSE, README.md       # Documentation
 ```
 
 ## Dependencies
 
-- [tar](https://crates.io/crates/tar) - Tar archive handling
-- [flate2](https://crates.io/crates/flate2) - GZip compression support
-- [xz2](https://crates.io/crates/xz2) - XZ compression support
-- [bzip2](https://crates.io/crates/bzip2) - BZip2 compression support
-- [zip](https://crates.io/crates/zip) - ZIP archive support
-- [clap](https://crates.io/crates/clap) - Command-line argument parsing
-- [anyhow](https://crates.io/crates/anyhow) - Error handling
+- [tar](https://crates.io/crates/tar) 0.4 - Tar archive handling
+- [flate2](https://crates.io/crates/flate2) 1.1 - GZip compression support
+- [xz2](https://crates.io/crates/xz2) 0.1 - XZ compression support
+- [bzip2](https://crates.io/crates/bzip2) 0.6 - BZip2 compression support
+- [zip](https://crates.io/crates/zip) 7 - ZIP archive support
+- [clap](https://crates.io/crates/clap) 4.5 - Command-line argument parsing
+- [anyhow](https://crates.io/crates/anyhow) 1.0 - Error handling
 
 ## License
 
@@ -147,7 +179,11 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! This project uses:
+- **Dependabot** for automated dependency updates
+- **Rebase merging** for clean linear history (Squash and Merge commit are disabled)
+
+Please feel free to submit a Pull Request.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
