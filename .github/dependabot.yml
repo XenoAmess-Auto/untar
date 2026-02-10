@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # Cargo (Rust) dependencies
+  - package-ecosystem: "cargo"
+    directory: "/rust"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "XenoAmess-bot"
+    assignees:
+      - "XenoAmess-bot"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "XenoAmess-bot"
+    assignees:
+      - "XenoAmess-bot"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
