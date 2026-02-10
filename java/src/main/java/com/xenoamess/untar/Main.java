@@ -210,7 +210,16 @@ public class Main implements Callable<Integer> {
     private void extractTar(TarArchiveInputStream tis, Path destDir) throws IOException {
         TarArchiveEntry entry;
         while ((entry = tis.getNextTarEntry()) != null) {
-            Path entryPath = destDir.resolve(entry.getName());
+            String entryName = entry.getName();
+            // 删除前导 "/" 以防止绝对路径问题
+            while (entryName.startsWith("/")) {
+                entryName = entryName.substring(1);
+            }
+            // 跳过空名称和父目录遍历（安全考虑）
+            if (entryName.isEmpty() || entryName.contains("..")) {
+                continue;
+            }
+            Path entryPath = destDir.resolve(entryName);
             if (entry.isDirectory()) {
                 Files.createDirectories(entryPath);
             } else {
@@ -230,7 +239,7 @@ public class Main implements Callable<Integer> {
                 }
             }
             if (verbose) {
-                System.out.println(msg("extracting") + ": " + entry.getName());
+                System.out.println(msg("extracting") + ": " + entryName);
             }
         }
     }
@@ -240,7 +249,16 @@ public class Main implements Callable<Integer> {
              ZipArchiveInputStream zis = new ZipArchiveInputStream(fis)) {
             ZipArchiveEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                Path entryPath = destDir.resolve(entry.getName());
+                String entryName = entry.getName();
+                // 删除前导 "/" 以防止绝对路径问题
+                while (entryName.startsWith("/")) {
+                    entryName = entryName.substring(1);
+                }
+                // 跳过空名称和父目录遍历（安全考虑）
+                if (entryName.isEmpty() || entryName.contains("..")) {
+                    continue;
+                }
+                Path entryPath = destDir.resolve(entryName);
                 if (entry.isDirectory()) {
                     Files.createDirectories(entryPath);
                 } else {
@@ -254,7 +272,7 @@ public class Main implements Callable<Integer> {
                     }
                 }
                 if (verbose) {
-                    System.out.println(msg("extracting") + ": " + entry.getName());
+                    System.out.println(msg("extracting") + ": " + entryName);
                 }
             }
         }
