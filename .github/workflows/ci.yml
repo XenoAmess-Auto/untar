@@ -90,7 +90,7 @@ jobs:
         run: cargo tarpaulin --out Xml --out Html
       - name: Upload coverage to Codecov (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./rust/cobertura.xml
           flags: rust
