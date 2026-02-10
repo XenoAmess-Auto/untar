@@ -26,6 +26,9 @@ jobs:
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
             name: untar-aarch64-linux-musl
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            name: untar-x86_64-windows
 
     runs-on: ${{ matrix.os }}
     defaults:
@@ -67,22 +70,38 @@ jobs:
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
 
-      - name: Strip binary (x86_64)
-        if: contains(matrix.target, 'x86_64')
+      - name: Strip binary (x86_64 linux)
+        if: contains(matrix.target, 'x86_64') && contains(matrix.target, 'linux')
         run: |
           strip target/${{ matrix.target }}/release/untar || true
 
-      - name: Package
+      - name: Package (Linux)
+        if: contains(matrix.os, 'ubuntu')
         run: |
           cd target/${{ matrix.target }}/release
           tar czvf ../../../${{ matrix.name }}.tar.gz untar
           cd ../../..
 
-      - name: Upload artifact
+      - name: Package (Windows)
+        if: contains(matrix.os, 'windows')
+        run: |
+          cd target/${{ matrix.target }}/release
+          7z a -tzip ..\..\..\${{ matrix.name }}.zip untar.exe
+          cd ..\..\..
+
+      - name: Upload artifact (Linux)
+        if: contains(matrix.os, 'ubuntu')
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.name }}
           path: rust/${{ matrix.name }}.tar.gz
+
+      - name: Upload artifact (Windows)
+        if: contains(matrix.os, 'windows')
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.name }}
+          path: rust/${{ matrix.name }}.zip
 
   create-release:
     name: Create Release
