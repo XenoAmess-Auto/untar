@@ -237,3 +237,253 @@ fn extract_zip<R: Read + Seek>(reader: R, output_dir: &str, quiet: bool) -> Resu
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::TempDir;
+
+    fn create_test_file(dir: &std::path::Path, name: &str, content: &[u8]) -> PathBuf {
+        let path = dir.join(name);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        let mut file = File::create(&path).unwrap();
+        file.write_all(content).unwrap();
+        path
+    }
+
+    fn create_test_tar(dir: &std::path::Path) -> PathBuf {
+        let tar_path = dir.join("test.tar");
+        let mut tar = tar::Builder::new(File::create(&tar_path).unwrap());
+
+        let mut header = tar::Header::new_gnu();
+        header.set_path("test.txt").unwrap();
+        header.set_size(13);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append(&header, "Hello, World!".as_bytes()).unwrap();
+
+        let mut header2 = tar::Header::new_gnu();
+        header2.set_path("subdir/nested.txt").unwrap();
+        header2.set_size(16);
+        header2.set_mode(0o644);
+        header2.set_cksum();
+        tar.append(&header2, "Nested content!".as_bytes()).unwrap();
+
+        tar.finish().unwrap();
+        tar_path
+    }
+
+    fn create_test_tar_gz(dir: &std::path::Path) -> PathBuf {
+        let tgz_path = dir.join("test.tar.gz");
+        let file = File::create(&tgz_path).unwrap();
+        let gz = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut tar = tar::Builder::new(gz);
+
+        let mut header = tar::Header::new_gnu();
+        header.set_path("test.txt").unwrap();
+        header.set_size(13);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append(&header, "Hello, World!".as_bytes()).unwrap();
+
+        let mut header2 = tar::Header::new_gnu();
+        header2.set_path("data/config.json").unwrap();
+        header2.set_size(17);
+        header2.set_mode(0o644);
+        header2.set_cksum();
+        tar.append(&header2, b"{\"key\": \"value\"}").unwrap();
+
+        tar.finish().unwrap();
+        tgz_path
+    }
+
+    fn create_test_tgz(dir: &std::path::Path) -> PathBuf {
+        let tgz_path = dir.join("test.tgz");
+        let file = File::create(&tgz_path).unwrap();
+        let gz = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut tar = tar::Builder::new(gz);
+
+        let mut header = tar::Header::new_gnu();
+        header.set_path("archive.txt").unwrap();
+        header.set_size(12);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append(&header, "TGZ archive!".as_bytes()).unwrap();
+
+        tar.finish().unwrap();
+        tgz_path
+    }
+
+    fn create_test_tar_xz(dir: &std::path::Path) -> PathBuf {
+        let txz_path = dir.join("test.tar.xz");
+        let file = File::create(&txz_path).unwrap();
+        let xz = xz2::write::XzEncoder::new(file, 6);
+        let mut tar = tar::Builder::new(xz);
+
+        let mut header = tar::Header::new_gnu();
+        header.set_path("xz_test.txt").unwrap();
+        header.set_size(14);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append(&header, "XZ compressed!".as_bytes()).unwrap();
+
+        let mut header2 = tar::Header::new_gnu();
+        header2.set_path("readme.md").unwrap();
+        header2.set_size(9);
+        header2.set_mode(0o644);
+        header2.set_cksum();
+        tar.append(&header2, "# README".as_bytes()).unwrap();
+
+        tar.finish().unwrap();
+        txz_path
+    }
+
+    fn create_test_tar_bz2(dir: &std::path::Path) -> PathBuf {
+        let tbz2_path = dir.join("test.tar.bz2");
+        let file = File::create(&tbz2_path).unwrap();
+        let bz2 = bzip2::write::BzEncoder::new(file, bzip2::Compression::default());
+        let mut tar = tar::Builder::new(bz2);
+
+        let mut header = tar::Header::new_gnu();
+        header.set_path("bz2_test.txt").unwrap();
+        header.set_size(16);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append(&header, "BZ2 compressed!".as_bytes()).unwrap();
+
+        tar.finish().unwrap();
+        tbz2_path
+    }
+
+    fn create_test_zip(dir: &std::path::Path) -> PathBuf {
+        let zip_path = dir.join("test.zip");
+        let file = File::create(&zip_path).unwrap();
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+
+        zip.start_file("zip_test.txt", options).unwrap();
+        zip.write_all("ZIP archive content".as_bytes()).unwrap();
+
+        zip.start_file("docs/info.txt", options).unwrap();
+        zip.write_all("Documentation file".as_bytes()).unwrap();
+
+        zip.finish().unwrap();
+        zip_path
+    }
+
+    fn verify_extracted_content(output_dir: &std::path::Path, expected_files: &[(&str, &str)]) {
+        for (file_path, expected_content) in expected_files {
+            let full_path = output_dir.join(file_path);
+            assert!(full_path.exists(), "File should exist: {}", file_path);
+            let content = fs::read_to_string(&full_path).unwrap();
+            assert_eq!(content, *expected_content, "Content mismatch for {}", file_path);
+        }
+    }
+
+    #[test]
+    fn test_extract_tar() {
+        let temp_dir = TempDir::new().unwrap();
+        let tar_path = create_test_tar(temp_dir.path());
+        let output_dir = temp_dir.path().join("output_tar");
+
+        extract_archive(tar_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+
+        verify_extracted_content(&output_dir, &[
+            ("test.txt", "Hello, World!"),
+            ("subdir/nested.txt", "Nested content!"),
+        ]);
+    }
+
+    #[test]
+    fn test_extract_tar_gz() {
+        let temp_dir = TempDir::new().unwrap();
+        let tgz_path = create_test_tar_gz(temp_dir.path());
+        let output_dir = temp_dir.path().join("output_tgz");
+
+        extract_archive(tgz_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+
+        verify_extracted_content(&output_dir, &[
+            ("test.txt", "Hello, World!"),
+            ("data/config.json", "{\"key\": \"value\"}"),
+        ]);
+    }
+
+    #[test]
+    fn test_extract_tgz() {
+        let temp_dir = TempDir::new().unwrap();
+        let tgz_path = create_test_tgz(temp_dir.path());
+        let output_dir = temp_dir.path().join("output_tgz2");
+
+        extract_archive(tgz_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+
+        verify_extracted_content(&output_dir, &[
+            ("archive.txt", "TGZ archive!"),
+        ]);
+    }
+
+    #[test]
+    fn test_extract_tar_xz() {
+        let temp_dir = TempDir::new().unwrap();
+        let txz_path = create_test_tar_xz(temp_dir.path());
+        let output_dir = temp_dir.path().join("output_txz");
+
+        extract_archive(txz_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+
+        verify_extracted_content(&output_dir, &[
+            ("xz_test.txt", "XZ compressed!"),
+            ("readme.md", "# README"),
+        ]);
+    }
+
+    #[test]
+    fn test_extract_tar_bz2() {
+        let temp_dir = TempDir::new().unwrap();
+        let tbz2_path = create_test_tar_bz2(temp_dir.path());
+        let output_dir = temp_dir.path().join("output_tbz2");
+
+        extract_archive(tbz2_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+
+        verify_extracted_content(&output_dir, &[
+            ("bz2_test.txt", "BZ2 compressed!"),
+        ]);
+    }
+
+    #[test]
+    fn test_extract_zip() {
+        let temp_dir = TempDir::new().unwrap();
+        let zip_path = create_test_zip(temp_dir.path());
+        let output_dir = temp_dir.path().join("output_zip");
+
+        extract_archive(zip_path.to_str().unwrap(), output_dir.to_str().unwrap(), true).unwrap();
+
+        verify_extracted_content(&output_dir, &[
+            ("zip_test.txt", "ZIP archive content"),
+            ("docs/info.txt", "Documentation file"),
+        ]);
+    }
+
+    #[test]
+    fn test_unsupported_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.rar");
+        fs::write(&file_path, "fake content").unwrap();
+
+        let result = extract_archive(file_path.to_str().unwrap(), temp_dir.path().join("out").to_str().unwrap(), true);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unsupported archive format"));
+    }
+
+    #[test]
+    fn test_format_size() {
+        assert_eq!(format_size(0), "0 B");
+        assert_eq!(format_size(512), "512 B");
+        assert_eq!(format_size(1024), "1.0 KB");
+        assert_eq!(format_size(1536), "1.5 KB");
+        assert_eq!(format_size(1024 * 1024), "1.0 MB");
+        assert_eq!(format_size(1024 * 1024 * 1024), "1.0 GB");
+    }
+}
