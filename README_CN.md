@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
-[![CI](https://github.com/XenoAmess-bot/untar/actions/workflows/ci.yml/badge.svg)](https://github.com/XenoAmess-bot/untar/actions)
-[![Release](https://github.com/XenoAmess-bot/untar/actions/workflows/release.yml/badge.svg)](https://github.com/XenoAmess-bot/untar/releases)
+[![CI](https://github.com/XenoAmess-Auto/untar/actions/workflows/ci.yml/badge.svg)](https://github.com/XenoAmess-Auto/untar/actions)
+[![Release](https://github.com/XenoAmess-Auto/untar/actions/workflows/release.yml/badge.svg)](https://github.com/XenoAmess-Auto/untar/releases)
 
 [English](README.md) | 中文版
 
@@ -22,7 +22,7 @@
 
 ### 预构建二进制文件
 
-从 [Releases](https://github.com/XenoAmess-bot/untar/releases) 页面下载预构建的二进制文件。
+从 [Releases](https://github.com/XenoAmess-Auto/untar/releases) 页面下载预构建的二进制文件。
 
 可用构建版本：
 - `untar-x86_64-linux-gnu` - Linux x86_64 (glibc)
@@ -32,7 +32,7 @@
 
 ### Debian/Ubuntu (.deb 包)
 
-从 [Releases](https://github.com/XenoAmess-bot/untar/releases) 页面下载 `.deb` 包并安装：
+从 [Releases](https://github.com/XenoAmess-Auto/untar/releases) 页面下载 `.deb` 包并安装：
 
 ```bash
 sudo dpkg -i untar_*.deb
@@ -47,7 +47,7 @@ sudo apt install ./untar_*.deb
 
 ```bash
 # 克隆仓库
-git clone https://github.com/XenoAmess-bot/untar.git
+git clone https://github.com/XenoAmess-Auto/untar.git
 cd untar/rust
 
 # 构建 Release 版本
@@ -55,15 +55,6 @@ cargo build --release
 
 # 安装到 /usr/local/bin（可选）
 sudo cp target/release/untar /usr/local/bin/
-```
-
-### Java 版本（仅供参考）
-
-Java 版本仅作为参考保留，使用 Quarkus + GraalVM 进行原生编译。不再积极维护。
-
-```bash
-cd untar/java
-mvn package -Pnative
 ```
 
 ## 使用方法
@@ -125,8 +116,7 @@ untar -q archive.zip
 
 ### 环境要求
 
-- Rust 1.70+（Rust 版本）
-- Java 17 + Maven（Java 版本，仅供参考）
+- Rust 1.70+
 
 ### 构建命令
 
@@ -145,13 +135,10 @@ cargo test
 
 ```
 untar/
-├── rust/                    # 主 Rust 实现（积极维护）
+├── rust/                    # Rust 实现
 │   ├── Cargo.toml
 │   └── src/
 │       └── main.rs
-├── java/                    # Java 参考实现
-│   ├── pom.xml
-│   └── src/
 ├── .github/
 │   ├── workflows/           # CI/CD 工作流
 │   │   ├── ci.yml           # 构建和测试
@@ -177,7 +164,7 @@ untar/
 
 ## 作者
 
-- **XenoAmess** - [GitHub](https://github.com/XenoAmess-bot)
+- **XenoAmess** - [GitHub](https://github.com/XenoAmess-Auto)
 
 ## 贡献
 

@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
-[![CI](https://github.com/XenoAmess-bot/untar/actions/workflows/ci.yml/badge.svg)](https://github.com/XenoAmess-bot/untar/actions)
-[![Release](https://github.com/XenoAmess-bot/untar/actions/workflows/release.yml/badge.svg)](https://github.com/XenoAmess-bot/untar/releases)
+[![CI](https://github.com/XenoAmess-Auto/untar/actions/workflows/ci.yml/badge.svg)](https://github.com/XenoAmess-Auto/untar/actions)
+[![Release](https://github.com/XenoAmess-Auto/untar/actions/workflows/release.yml/badge.svg)](https://github.com/XenoAmess-Auto/untar/releases)
 
 English | [中文版](README_CN.md)
 
@@ -22,7 +22,7 @@ A lightweight, fast command-line tool for extracting tar archives with support f
 
 ### Pre-built Binaries
 
-Download pre-built binaries from the [Releases](https://github.com/XenoAmess-bot/untar/releases) page.
+Download pre-built binaries from the [Releases](https://github.com/XenoAmess-Auto/untar/releases) page.
 
 Available builds:
 - `untar-x86_64-linux-gnu` - Linux x86_64 (glibc)
@@ -32,7 +32,7 @@ Available builds:
 
 ### Debian/Ubuntu (.deb package)
 
-Download the `.deb` package from [Releases](https://github.com/XenoAmess-bot/untar/releases) and install:
+Download the `.deb` package from [Releases](https://github.com/XenoAmess-Auto/untar/releases) and install:
 
 ```bash
 sudo dpkg -i untar_*.deb
@@ -47,7 +47,7 @@ sudo apt install ./untar_*.deb
 
 ```bash
 # Clone the repository
-git clone https://github.com/XenoAmess-bot/untar.git
+git clone https://github.com/XenoAmess-Auto/untar.git
 cd untar/rust
 
 # Build release version
@@ -55,15 +55,6 @@ cargo build --release
 
 # Install to /usr/local/bin (optional)
 sudo cp target/release/untar /usr/local/bin/
-```
-
-### Java Version (Reference Only)
-
-The Java version is preserved for reference and uses Quarkus + GraalVM for native compilation. It is no longer actively maintained.
-
-```bash
-cd untar/java
-mvn package -Pnative
 ```
 
 ## Usage
@@ -125,8 +116,7 @@ untar -q archive.zip
 
 ### Requirements
 
-- Rust 1.70+ (for Rust version)
-- Java 17 + Maven (for Java version, reference only)
+- Rust 1.70+
 
 ### Build Commands
 
@@ -145,13 +135,10 @@ cargo test
 
 ```
 untar/
-├── rust/                    # Main Rust implementation (actively maintained)
+├── rust/                    # Rust implementation
 │   ├── Cargo.toml
 │   └── src/
 │       └── main.rs
-├── java/                    # Java reference implementation
-│   ├── pom.xml
-│   └── src/
 ├── .github/
 │   ├── workflows/           # CI/CD workflows
 │   │   ├── ci.yml           # Build and test
@@ -177,7 +164,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Author
 
-- **XenoAmess** - [GitHub](https://github.com/XenoAmess-bot)
+- **XenoAmess** - [GitHub](https://github.com/XenoAmess-Auto)
 
 ## Contributing
 
