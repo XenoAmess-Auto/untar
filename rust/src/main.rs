@@ -383,8 +383,7 @@ mod tests {
             assert!(full_path.exists(), "File should exist: {}", file_path);
             let content = fs::read_to_string(&full_path).unwrap();
             assert_eq!(
-                content,
-                *expected_content,
+                content, *expected_content,
                 "Content mismatch for {}",
                 file_path
             );
