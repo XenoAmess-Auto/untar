@@ -5,6 +5,8 @@
 [![CI](https://github.com/XenoAmess-bot/untar/actions/workflows/ci.yml/badge.svg)](https://github.com/XenoAmess-bot/untar/actions)
 [![Release](https://github.com/XenoAmess-bot/untar/actions/workflows/release.yml/badge.svg)](https://github.com/XenoAmess-bot/untar/releases)
 
+English | [中文版](README_CN.md)
+
 A lightweight, fast command-line tool for extracting tar archives with support for multiple compression formats.
 
 ## Features
