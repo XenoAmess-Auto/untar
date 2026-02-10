@@ -20,7 +20,7 @@ zip = { version = "7", default-features = false, features = ["deflate"] }
 # Use anyhow for error handling (minimal overhead)
 anyhow = "1.0"
 # Clap for CLI argument parsing (using features to minimize size)
-clap = { version = "4.4", features = ["cargo", "derive"] }
+clap = { version = "4.5", features = ["cargo", "derive"] }
 
 [profile.release]
 opt-level = "z"        # Optimize for size
