@@ -1,6 +1,6 @@
 [package]
 name = "untar"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 authors = ["xenoamess"]
 description = "Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages"
