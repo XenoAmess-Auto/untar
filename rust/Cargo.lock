@@ -551,7 +551,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "untar"
-version = "1.0.1"
+version = "1.0.3"
 dependencies = [
  "anyhow",
  "bzip2",
@@ -751,9 +751,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "7.4.0"
+version = "8.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc12baa6db2b15a140161ce53d72209dacea594230798c24774139b54ecaa980"
+checksum = "6e499faf5c6b97a0d086f4a8733de6d47aee2252b8127962439d8d4311a73f72"
 dependencies = [
  "crc32fast",
  "flate2",
