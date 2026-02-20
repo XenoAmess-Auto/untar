@@ -73,7 +73,7 @@ fn main() {
     }
 }
 
-const HELP: &str = "untar 1.0.1 - Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages
+const HELP: &str = "untar 1.0.3 - Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages
 
 Usage: untar [OPTIONS] FILE
 
