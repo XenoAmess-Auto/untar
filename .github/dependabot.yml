@@ -1,29 +1,39 @@
 version: 2
 updates:
-  # Cargo (Rust) dependencies
   - package-ecosystem: "cargo"
     directory: "/rust"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Asia/Shanghai"
+    target-branch: "master"
     open-pull-requests-limit: 10
     reviewers:
       - "XenoAmess"
     assignees:
       - "XenoAmess"
     commit-message:
-      prefix: "deps"
-      include: "scope"
+      prefix: "build(deps)"
+    labels:
+      - "dependencies"
+      - "rust"
 
-  # GitHub Actions dependencies
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+      day: "monday"
+      time: "04:00"
+      timezone: "Asia/Shanghai"
+    target-branch: "master"
+    open-pull-requests-limit: 5
     reviewers:
       - "XenoAmess"
     assignees:
       - "XenoAmess"
     commit-message:
       prefix: "ci"
-      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
