@@ -1,0 +1,16 @@
+name: untar
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+release: 1
+section: utils
+priority: optional
+maintainer: XenoAmess-bot <xenoamess.bot@gmail.com>
+description: Fast command-line tool for extracting tar archives
+homepage: https://github.com/XenoAmess-Auto/untar
+license: Apache-2.0
+contents:
+  - src: ./bin/untar
+    dst: /usr/bin/untar
+    file_info:
+      mode: 0755

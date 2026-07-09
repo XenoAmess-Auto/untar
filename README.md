@@ -25,22 +25,50 @@ A lightweight, fast command-line tool for extracting tar archives with support f
 Download pre-built binaries from the [Releases](https://github.com/XenoAmess-Auto/untar/releases) page.
 
 Available builds:
-- `untar-x86_64-linux-gnu` - Linux x86_64 (glibc)
-- `untar-x86_64-linux-musl` - Linux x86_64 (static musl)
-- `untar-aarch64-linux-musl` - Linux ARM64 (static musl)
-- `untar-x86_64-windows` - Windows x86_64
+- `untar-x86_64-linux-musl.tar.gz` - Linux x86_64 (static musl)
+- `untar-aarch64-linux-musl.tar.gz` - Linux ARM64 (static musl)
+- `untar-x86_64-windows.zip` - Windows x86_64
 
-### Debian/Ubuntu (.deb package)
+### Linux Packages
 
-Download the `.deb` package from [Releases](https://github.com/XenoAmess-Auto/untar/releases) and install:
+Pre-built packages for common distributions are available on the [Releases](https://github.com/XenoAmess-Auto/untar/releases) page.
+
+#### Debian/Ubuntu (.deb)
 
 ```bash
+sudo apt install ./untar_*.deb
+# or
 sudo dpkg -i untar_*.deb
 ```
 
-Or install dependencies automatically:
+#### Fedora/RHEL/openSUSE (.rpm)
+
 ```bash
-sudo apt install ./untar_*.deb
+sudo rpm -i untar-*.rpm
+# or
+sudo dnf install ./untar-*.rpm
+```
+
+#### Alpine Linux (.apk)
+
+```bash
+sudo apk add --allow-untrusted untar-*.apk
+```
+
+#### Arch Linux (.pkg.tar.zst)
+
+```bash
+sudo pacman -U untar-*.pkg.tar.zst
+```
+
+### Windows (.msi / .zip)
+
+Download the `.msi` installer or `.zip` archive from [Releases](https://github.com/XenoAmess-Auto/untar/releases).
+
+To install the MSI silently:
+
+```powershell
+msiexec /i untar-*.msi /qn
 ```
 
 ### From Source (Rust)
@@ -142,8 +170,7 @@ untar/
 ├── .github/
 │   ├── workflows/           # CI/CD workflows
 │   │   ├── ci.yml           # Build and test
-│   │   ├── release.yml      # Release builds (multi-platform)
-│   │   └── build-deb.yml    # Debian package builder
+│   │   └── release.yml      # Release builds (multi-platform)
 │   └── dependabot.yml       # Automated dependency updates
 └── LICENSE, README.md       # Documentation
 ```

@@ -39,12 +39,12 @@ fn main() {
     let args = Args::parse();
 
     if args.version {
-        println!("untar {}", VERSION);
+        println!("untar {VERSION}");
         exit(0);
     }
 
     if args.help {
-        println!("{}", HELP);
+        println!("{HELP}");
         exit(0);
     }
 
@@ -52,7 +52,7 @@ fn main() {
         Some(f) => f,
         None => {
             eprintln!("Error: No archive file specified");
-            println!("{}", HELP);
+            println!("{HELP}");
             exit(1);
         }
     };
@@ -61,15 +61,15 @@ fn main() {
     let directory = args.directory.unwrap_or_else(|| ".".to_string());
 
     if let Err(e) = extract_archive(&file, &directory, quiet) {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {e}");
         if !quiet {
-            eprintln!("{:?}", e);
+            eprintln!("{e:?}");
         }
         exit(1);
     }
 
     if !quiet {
-        println!("Done: {}", file);
+        println!("Done: {file}");
     }
 }
 
@@ -89,7 +89,7 @@ Supported formats:
 
 fn format_size(size: u64) -> String {
     if size < 1024 {
-        format!("{} B", size)
+        format!("{size} B")
     } else if size < 1024 * 1024 {
         format!("{:.1} KB", size as f64 / 1024.0)
     } else if size < 1024 * 1024 * 1024 {
@@ -100,7 +100,7 @@ fn format_size(size: u64) -> String {
 }
 
 fn extract_archive(file_path: &str, output_dir: &str, quiet: bool) -> Result<()> {
-    let file = File::open(file_path).with_context(|| format!("Cannot open file: {}", file_path))?;
+    let file = File::open(file_path).with_context(|| format!("Cannot open file: {file_path}"))?;
 
     let file_name_lower = file_path.to_lowercase();
 
@@ -108,13 +108,13 @@ fn extract_archive(file_path: &str, output_dir: &str, quiet: bool) -> Result<()>
     let file_size = file.metadata()?.len();
 
     if !quiet {
-        println!("Archive: {}", file_path);
+        println!("Archive: {file_path}");
         println!("Size: {}", format_size(file_size));
     }
 
     // Create output directory
     fs::create_dir_all(output_dir)
-        .with_context(|| format!("Cannot create directory: {}", output_dir))?;
+        .with_context(|| format!("Cannot create directory: {output_dir}"))?;
 
     // Detect format by extension and extract
     if file_name_lower.ends_with(".tar.gz") || file_name_lower.ends_with(".tgz") {
@@ -197,7 +197,7 @@ fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, quiet: bool) -> Resu
                 {
                     let permissions = PermissionsExt::from_mode(mode);
                     if let Err(e) = fs::set_permissions(&entry_path, permissions) {
-                        eprintln!("Warning: Could not set permissions: {}", e);
+                        eprintln!("Warning: Could not set permissions: {e}");
                     }
                 }
             }
@@ -205,7 +205,7 @@ fn extract_tar_reader<R: Read>(reader: R, output_dir: &str, quiet: bool) -> Resu
     }
 
     if !quiet {
-        println!("Total files: {}", entry_count);
+        println!("Total files: {entry_count}");
     }
 
     Ok(())
@@ -216,7 +216,7 @@ fn extract_zip<R: Read + Seek>(reader: R, output_dir: &str, quiet: bool) -> Resu
     let total_count = archive.len();
 
     if !quiet {
-        println!("Total files: {}", total_count);
+        println!("Total files: {total_count}");
     }
 
     for i in 0..total_count {

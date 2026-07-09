@@ -25,22 +25,50 @@
 从 [Releases](https://github.com/XenoAmess-Auto/untar/releases) 页面下载预构建的二进制文件。
 
 可用构建版本：
-- `untar-x86_64-linux-gnu` - Linux x86_64 (glibc)
-- `untar-x86_64-linux-musl` - Linux x86_64 (静态 musl)
-- `untar-aarch64-linux-musl` - Linux ARM64 (静态 musl)
-- `untar-x86_64-windows` - Windows x86_64
+- `untar-x86_64-linux-musl.tar.gz` - Linux x86_64 (静态 musl)
+- `untar-aarch64-linux-musl.tar.gz` - Linux ARM64 (静态 musl)
+- `untar-x86_64-windows.zip` - Windows x86_64
 
-### Debian/Ubuntu (.deb 包)
+### Linux 安装包
 
-从 [Releases](https://github.com/XenoAmess-Auto/untar/releases) 页面下载 `.deb` 包并安装：
+常见发行版的预构建安装包可在 [Releases](https://github.com/XenoAmess-Auto/untar/releases) 页面下载。
+
+#### Debian/Ubuntu (.deb)
 
 ```bash
+sudo apt install ./untar_*.deb
+# 或
 sudo dpkg -i untar_*.deb
 ```
 
-或自动安装依赖：
+#### Fedora/RHEL/openSUSE (.rpm)
+
 ```bash
-sudo apt install ./untar_*.deb
+sudo rpm -i untar-*.rpm
+# 或
+sudo dnf install ./untar-*.rpm
+```
+
+#### Alpine Linux (.apk)
+
+```bash
+sudo apk add --allow-untrusted untar-*.apk
+```
+
+#### Arch Linux (.pkg.tar.zst)
+
+```bash
+sudo pacman -U untar-*.pkg.tar.zst
+```
+
+### Windows (.msi / .zip)
+
+从 [Releases](https://github.com/XenoAmess-Auto/untar/releases) 页面下载 `.msi` 安装程序或 `.zip` 压缩包。
+
+静默安装 MSI：
+
+```powershell
+msiexec /i untar-*.msi /qn
 ```
 
 ### 从源码编译 (Rust)
@@ -142,8 +170,7 @@ untar/
 ├── .github/
 │   ├── workflows/           # CI/CD 工作流
 │   │   ├── ci.yml           # 构建和测试
-│   │   ├── release.yml      # 多平台 Release 构建
-│   │   └── build-deb.yml    # Debian 包构建
+│   │   └── release.yml      # 多平台 Release 构建
 │   └── dependabot.yml       # 自动依赖更新
 └── LICENSE、README.md       # 文档
 ```
