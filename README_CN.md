@@ -113,16 +113,22 @@ untar --help
 ### 命令行选项
 
 ```
-Usage: untar [OPTIONS] [FILE]
+Usage: untar [OPTIONS] [FILE] [PATTERNS]...
 
 Arguments:
-  [FILE]  要解压的归档文件
+  [FILE]       要解压或列出的归档文件
+  [PATTERNS]   仅解压路径以这些模式开头的条目
 
 Options:
-  -d, --directory <DIR>  解压文件到指定目录（默认：当前目录）
-  -q, --quiet            静默模式（不显示进度）
-  -h, --help             显示帮助
-  -V, --version          显示版本
+  -d, --directory <DIR>       解压文件到指定目录（默认：当前目录）
+  -q, --quiet                  静默模式（不显示进度）
+  -l, --list                   列出归档内容，不解压
+      --on-exists <POLICY>    已存在文件的处理方式 [默认：ask]
+                               （ask, error, overwrite, skip, rename）
+      --rename-suffix <SUFFIX>  重命名已存在文件时使用的后缀 [默认：.1]
+      --strip-components <N>   去掉前 N 层路径
+  -h, --help                   显示帮助
+  -V, --version                显示版本
 ```
 
 ### 示例

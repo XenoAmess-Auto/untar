@@ -23,20 +23,25 @@ fn main() {
         }
     };
 
-    let output_dir = args.output_dir();
-    let quiet = args.quiet;
-
-    let options = ExtractOptions::new(output_dir, quiet);
+    let options = ExtractOptions::new(
+        args.output_dir(),
+        args.quiet,
+        args.list,
+        args.on_exists,
+        args.rename_suffix,
+        args.strip_components,
+        args.patterns,
+    );
 
     if let Err(e) = extract::extract_archive(Path::new(&file), &options) {
         eprintln!("Error: {e}");
-        if !quiet {
+        if !options.quiet {
             eprintln!("{e:?}");
         }
         exit(1);
     }
 
-    if !quiet {
+    if !options.quiet && !options.list {
         println!("Done: {file}");
     }
 }

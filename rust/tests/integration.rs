@@ -135,6 +135,119 @@ fn rejects_zip_slip() {
 }
 
 #[test]
+fn lists_archive_contents() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(
+        tmp.path(),
+        "test.tar.gz",
+        &[("hello.txt", "Hello"), ("dir/nested.txt", "Nested")],
+    );
+
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("--list")
+        .arg(&archive)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("hello.txt"))
+        .stdout(predicate::str::contains("dir/nested.txt"));
+}
+
+#[test]
+fn strips_components() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(
+        tmp.path(),
+        "test.tar.gz",
+        &[("a/b/c.txt", "C"), ("a/b/d.txt", "D")],
+    );
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--strip-components")
+        .arg("2")
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("c.txt")).unwrap(), "C");
+    assert_eq!(fs::read_to_string(output.join("d.txt")).unwrap(), "D");
+}
+
+#[test]
+fn extracts_matching_pattern() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(
+        tmp.path(),
+        "test.tar.gz",
+        &[("keep.txt", "KEEP"), ("drop.txt", "DROP")],
+    );
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .arg("keep.txt")
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("keep.txt")).unwrap(), "KEEP");
+    assert!(!output.join("drop.txt").exists());
+}
+
+#[test]
+fn skips_existing_files() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(tmp.path(), "test.tar.gz", &[("hello.txt", "NEW")]);
+
+    let output = tmp.path().join("out");
+    fs::create_dir_all(&output).unwrap();
+    fs::write(output.join("hello.txt"), "OLD").unwrap();
+
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--on-exists=skip")
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("hello.txt")).unwrap(), "OLD");
+}
+
+#[test]
+fn renames_existing_files() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(tmp.path(), "test.tar.gz", &[("hello.txt", "NEW")]);
+
+    let output = tmp.path().join("out");
+    fs::create_dir_all(&output).unwrap();
+    fs::write(output.join("hello.txt"), "OLD").unwrap();
+
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--on-exists=rename")
+        .arg("--rename-suffix=.new")
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("hello.txt")).unwrap(), "OLD");
+    assert_eq!(
+        fs::read_to_string(output.join("hello.txt.new")).unwrap(),
+        "NEW"
+    );
+}
+
+#[test]
 fn shows_version() {
     Command::cargo_bin("untar")
         .unwrap()

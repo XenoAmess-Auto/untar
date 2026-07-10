@@ -113,16 +113,22 @@ untar --help
 ### Command Line Options
 
 ```
-Usage: untar [OPTIONS] [FILE]
+Usage: untar [OPTIONS] [FILE] [PATTERNS]...
 
 Arguments:
-  [FILE]  Archive file to extract
+  [FILE]       Archive file to extract or list
+  [PATTERNS]   Only extract entries whose path starts with one of these patterns
 
 Options:
-  -d, --directory <DIR>  Output directory
-  -q, --quiet            Quiet mode (suppress output)
-  -h, --help             Print help
-  -V, --version          Print version
+  -d, --directory <DIR>       Output directory
+  -q, --quiet                  Quiet mode (suppress output)
+  -l, --list                   List archive contents instead of extracting
+      --on-exists <POLICY>    How to handle existing files [default: ask]
+                               (ask, error, overwrite, skip, rename)
+      --rename-suffix <SUFFIX>  Suffix used when renaming existing files [default: .1]
+      --strip-components <N>   Strip the first N leading path components
+  -h, --help                   Print help
+  -V, --version                Print version
 ```
 
 ### Examples

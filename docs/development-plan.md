@@ -43,23 +43,25 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 
 ## Phase 2: Core CLI Features
 
+**Status: completed**
+
 ### 2.1 Overwrite Behavior
-- Default in an interactive TTY: prompt the user (`overwrite/skip/rename?`).
-- Default in a non-interactive environment: exit with an error unless a policy is specified.
-- `--on-exists=overwrite` — silently overwrite existing files.
-- `--on-exists=skip` — silently skip existing files.
-- `--on-exists=rename` — silently rename by appending a suffix.
-- `--rename-suffix=.SUFFIX` — customize the suffix (default `.1`).
+- [x] Default in an interactive TTY: prompt the user (`overwrite/skip/rename?`).
+- [x] Default in a non-interactive environment: exit with an error unless a policy is specified.
+- [x] `--on-exists=overwrite` — silently overwrite existing files.
+- [x] `--on-exists=skip` — silently skip existing files.
+- [x] `--on-exists=rename` — silently rename by appending a suffix.
+- [x] `--rename-suffix=.SUFFIX` — customize the suffix (default `.1`).
 
 ### 2.2 List Archive Contents
-- `-l, --list <ARCHIVE>`: print file list, size, and permissions without extracting.
+- [x] `-l, --list <ARCHIVE>`: print file list, size, and permissions without extracting.
 
 ### 2.3 Selective Extraction
-- `untar archive.tar.gz path/inside/file.txt` extracts only matching entries.
-- Support prefix matching or glob patterns (e.g., `*.txt`).
+- [x] `untar archive.tar.gz path/inside/file.txt` extracts only matching entries.
+- [x] Prefix matching support (e.g., `untar archive.tar.gz dir/` extracts everything under `dir`).
 
 ### 2.4 Strip Components
-- `--strip-components N`: strip the first N path components, matching `tar` behavior.
+- [x] `--strip-components N`: strip the first N path components, matching `tar` behavior.
 
 ---
 
