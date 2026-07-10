@@ -108,7 +108,7 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 - [x] Use `indicatif` to show overall extraction progress (disabled by `--quiet`).
 
 ### 5.2 Docker Image
-- Provide a minimal Dockerfile for containerized usage.
+- [x] Provide a minimal Dockerfile for containerized usage.
 
 ### 5.3 Shell Completion & Man Page
 - [x] Generate shell completions via `clap_complete`.

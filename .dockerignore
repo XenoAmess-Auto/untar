@@ -1,0 +1,6 @@
+.git
+.github
+rust/target
+docs
+*.md
+!README.md

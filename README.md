@@ -61,6 +61,26 @@ sudo apk add --allow-untrusted untar-*.apk
 sudo pacman -U untar-*.pkg.tar.zst
 ```
 
+### Docker
+
+A minimal image is available. Build it locally:
+
+```bash
+docker build -t untar .
+```
+
+Extract an archive with a bind mount:
+
+```bash
+docker run --rm -v "$(pwd):/workdir" untar -d /workdir/out /workdir/archive.tar.gz
+```
+
+List archive contents:
+
+```bash
+docker run --rm -v "$(pwd):/workdir" untar --list /workdir/archive.tar.gz
+```
+
 ### Windows (.msi / .zip)
 
 Download the `.msi` installer or `.zip` archive from [Releases](https://github.com/XenoAmess-Auto/untar/releases).
@@ -191,6 +211,8 @@ cargo test
 
 ```
 untar/
+├── Dockerfile               # Multi-stage Docker image
+├── .dockerignore            # Docker build context exclusions
 ├── rust/                    # Rust implementation
 │   ├── Cargo.toml
 │   ├── src/
@@ -218,6 +240,10 @@ untar/
 │   │   ├── release.yml      # Release builds (multi-platform)
 │   │   └── auto-merge.yml   # Dependabot auto-merge
 │   └── dependabot.yml       # Automated dependency updates
+├── docs/                    # Additional documentation
+│   ├── development-plan.md
+│   ├── format-expansion-plan.md
+│   └── supported-formats.md
 └── LICENSE, README.md       # Documentation
 ```
 
