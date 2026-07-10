@@ -995,8 +995,19 @@ fn extracts_xar() {
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
 
+fn xorriso_available() -> bool {
+    std::process::Command::new("xorriso")
+        .arg("--version")
+        .output()
+        .is_ok()
+}
+
 #[test]
 fn extracts_iso() {
+    if !xorriso_available() {
+        eprintln!("skipping extracts_iso: xorriso not found in PATH");
+        return;
+    }
     let tmp = TempDir::new().unwrap();
     let archive = create_iso(tmp.path(), "test.iso", &[("A.TXT", "A"), ("B/C.TXT", "C")]);
     let output = tmp.path().join("out");

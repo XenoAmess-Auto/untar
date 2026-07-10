@@ -44,7 +44,7 @@ jobs:
             ${{ runner.os }}-cross-
 
       - name: Install cross
-        run: cargo install cross
+        run: cargo install cross --force
 
       - uses: Swatinem/rust-cache@v2
         with:
