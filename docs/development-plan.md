@@ -36,8 +36,8 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 - [x] Cover: successful extraction, overwrite behavior, listing, strip-components, and unsupported formats.
 
 ### 1.5 MSRV
-- [x] Add `rust-version = "1.70"` to `Cargo.toml`.
-- [x] Add an MSRV check job in CI.
+- [x] Add `rust-version = "1.78"` to `Cargo.toml`.
+- [x] Add an MSRV check job in CI using Rust 1.78.
 - [x] Update branch protection to require the `MSRV` check.
 
 ---
