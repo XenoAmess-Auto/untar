@@ -73,6 +73,31 @@ fn create_7z(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::
     path
 }
 
+fn create_password_7z(
+    dir: &std::path::Path,
+    name: &str,
+    password: &str,
+    files: &[(&str, &str)],
+) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let input = dir.join("7z_input");
+    for (name, content) in files {
+        let file_path = input.join(name);
+        fs::create_dir_all(file_path.parent().unwrap()).unwrap();
+        fs::write(&file_path, content).unwrap();
+    }
+    std::process::Command::new("7z")
+        .current_dir(&input)
+        .arg("a")
+        .arg(format!("-p{password}"))
+        .arg("-mhe=on")
+        .arg(&path)
+        .arg(".")
+        .status()
+        .expect("7z failed to create password archive");
+    path
+}
+
 #[derive(Copy, Clone)]
 enum Compression {
     Gz,
@@ -828,4 +853,104 @@ fn extracts_iso() {
         .success();
     assert_eq!(fs::read_to_string(output.join("A.TXT")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("B/C.TXT")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_password_7z() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_password_7z(
+        tmp.path(),
+        "test.7z",
+        "secret",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--password")
+        .arg("secret")
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_empty_tar_gz() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(tmp.path(), "empty.tar.gz", &[]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert!(output.exists());
+}
+
+#[test]
+fn lists_empty_archive() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip(tmp.path(), "empty.zip", &[]);
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("--list")
+        .arg(&archive)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Extracted").not());
+}
+
+#[test]
+fn extracts_unicode_filenames() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(
+        tmp.path(),
+        "unicode.tar.gz",
+        &[("中文.txt", "Chinese"), ("🎉.txt", "Party")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("中文.txt")).unwrap(),
+        "Chinese"
+    );
+    assert_eq!(fs::read_to_string(output.join("🎉.txt")).unwrap(), "Party");
+}
+
+#[test]
+fn extracts_nested_directories() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(
+        tmp.path(),
+        "nested.tar.gz",
+        &[("a/b/c/d.txt", "Deep"), ("a/b/other.txt", "Other")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("a/b/c/d.txt")).unwrap(),
+        "Deep"
+    );
+    assert_eq!(
+        fs::read_to_string(output.join("a/b/other.txt")).unwrap(),
+        "Other"
+    );
 }

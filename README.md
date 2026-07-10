@@ -7,12 +7,12 @@
 
 English | [中文版](README_CN.md)
 
-A lightweight, fast command-line tool for extracting tar archives with support for multiple compression formats.
+A lightweight, fast command-line tool for extracting archives with support for a wide range of formats.
 
 ## Features
 
 - 🚀 **Fast & Lightweight** - Written in Rust with optimized release builds
-- 📦 **Multiple Formats** - Support for `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`, `.zip`
+- 📦 **Multiple Formats** - Support for `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.txz`, `.tar.bz2`, `.tbz2`, `.tbz`, `.tar.lzma`, `.tlz`, `.tar.zst`, `.tzst`, `.tar.lz4`, `.tar.br`, `.zip`, `.7z`, `.rar`, `.cab`, `.ar`, `.a`, `.cpio`, `.iso`, `.xar`, `.lha`, `.lzh`, `.gz`, `.bz2`, `.xz`, `.zst`, `.lz4`, `.br`, `.lzma`
 - 🖥️ **Cross-Platform** - Linux (x86_64, ARM64) and Windows (x86_64) support
 - 🔧 **Simple Usage** - Intuitive command-line interface
 - 💾 **Preserves Permissions** - Unix file permissions are preserved during extraction
@@ -105,10 +105,31 @@ untar --help
 | Format | Extension | Description |
 |--------|-----------|-------------|
 | Tar | `.tar` | Uncompressed tar archive |
-| Gzip | `.tar.gz`, `.tgz` | Gzip-compressed tar archive |
-| XZ | `.tar.xz` | XZ-compressed tar archive |
-| BZip2 | `.tar.bz2` | BZip2-compressed tar archive |
-| Zip | `.zip` | ZIP archive |
+| Gzip-compressed Tar | `.tar.gz`, `.tgz` | Gzip-compressed tar archive |
+| XZ-compressed Tar | `.tar.xz`, `.txz` | XZ-compressed tar archive |
+| BZip2-compressed Tar | `.tar.bz2`, `.tbz2`, `.tbz` | BZip2-compressed tar archive |
+| LZMA-compressed Tar | `.tar.lzma`, `.tlz` | LZMA-compressed tar archive |
+| Zstandard-compressed Tar | `.tar.zst`, `.tzst` | Zstandard-compressed tar archive |
+| LZ4-compressed Tar | `.tar.lz4` | LZ4-compressed tar archive |
+| Brotli-compressed Tar | `.tar.br` | Brotli-compressed tar archive |
+| Zip | `.zip` | ZIP archive (including AES password-protected) |
+| 7-Zip | `.7z` | 7z archive (including password-protected) |
+| RAR | `.rar` | RAR archive |
+| Cabinet | `.cab` | Windows Cabinet archive |
+| Unix Archive | `.ar`, `.a` | Unix `ar` archive (common/static libraries) |
+| CPIO | `.cpio` | CPIO newc (SVR4) archive |
+| ISO 9660 | `.iso` | ISO 9660 CD/DVD image (primary volume names) |
+| XAR | `.xar` | XAR archive / macOS installer package payload |
+| LHA/LZH | `.lha`, `.lzh` | LHA/LZH archive |
+| Gzip stream | `.gz` | Single gzip-compressed file |
+| BZip2 stream | `.bz2` | Single bzip2-compressed file |
+| XZ stream | `.xz` | Single XZ-compressed file |
+| Zstandard stream | `.zst` | Single zstandard-compressed file |
+| LZ4 stream | `.lz4` | Single LZ4-compressed file |
+| Brotli stream | `.br` | Single brotli-compressed file |
+| LZMA stream | `.lzma` | Single LZMA-compressed file |
+
+Note: `.tar.lz` (LZIP), `.tar.Z` (Unix compress), `.ace`, `.arc`, and `.zoo` are not supported due to the lack of viable pure-Rust implementations.
 
 ### Command Line Options
 
@@ -178,7 +199,16 @@ untar/
 │   │   ├── extract.rs       # Extraction orchestration & path safety
 │   │   └── archive/         # Archive format implementations
 │   │       ├── mod.rs
+│   │       ├── ar.rs
+│   │       ├── cab.rs
+│   │       ├── cpio.rs
+│   │       ├── iso.rs
+│   │       ├── lha.rs
+│   │       ├── rar.rs
+│   │       ├── sevenz.rs
+│   │       ├── stream.rs
 │   │       ├── tar.rs
+│   │       ├── xar.rs
 │   │       └── zip.rs
 │   └── tests/
 │       └── integration.rs   # End-to-end CLI tests
@@ -197,9 +227,22 @@ untar/
 - [flate2](https://crates.io/crates/flate2) 1.1 - GZip compression support
 - [xz2](https://crates.io/crates/xz2) 0.1 - XZ compression support
 - [bzip2](https://crates.io/crates/bzip2) 0.6 - BZip2 compression support
-- [zip](https://crates.io/crates/zip) 7 - ZIP archive support
-- [clap](https://crates.io/crates/clap) 4.5 - Command-line argument parsing
+- [lzma-rs](https://crates.io/crates/lzma-rs) 0.3 - LZMA decompression
+- [ruzstd](https://crates.io/crates/ruzstd) 0.8 - Zstandard decompression
+- [lz4_flex](https://crates.io/crates/lz4_flex) 0.13 - LZ4 decompression
+- [brotli-decompressor](https://crates.io/crates/brotli-decompressor) 5 - Brotli decompression
+- [zip](https://crates.io/crates/zip) 8 - ZIP archive support
+- [sevenz-rust2](https://crates.io/crates/sevenz-rust2) 0.20 - 7z archive support
+- [rars](https://crates.io/crates/rars) 0.4 - RAR archive support
+- [cab](https://crates.io/crates/cab) 0.6 - Windows Cabinet support
+- [ar](https://crates.io/crates/ar) 0.9 - Unix archive support
+- [cpio](https://crates.io/crates/cpio) 0.4 - CPIO archive support
+- [iso9660-rs](https://crates.io/crates/iso9660-rs) 1.0 - ISO 9660 image support
+- [xara](https://crates.io/crates/xara) 0.3 - XAR archive support
+- [delharc](https://crates.io/crates/delharc) 0.6 - LHA/LZH archive support
+- [clap](https://crates.io/crates/clap) 4.6 - Command-line argument parsing
 - [anyhow](https://crates.io/crates/anyhow) 1.0 - Error handling
+- [indicatif](https://crates.io/crates/indicatif) 0.17 - Progress display
 
 ## License
 
