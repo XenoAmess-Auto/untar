@@ -1558,6 +1558,39 @@ fn create_zip_bomb(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
 }
 
 #[test]
+fn extracts_arj() {
+    let tmp = TempDir::new().unwrap();
+    let output = tmp.path().join("out");
+    assert_extracts_fixture(
+        Path::new("tests/fixtures/unarc/stored.arj"),
+        &output,
+        "LICENSE",
+    );
+}
+
+#[test]
+fn extracts_password_arj() {
+    let tmp = TempDir::new().unwrap();
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--password")
+        .arg("secret")
+        .arg("tests/fixtures/unarc/license_crypted.arj")
+        .assert()
+        .success();
+    let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs")
+        .unwrap()
+        .replace("\r\n", "\n");
+    let actual = fs::read_to_string(output.join("LICENSE"))
+        .unwrap()
+        .replace("\r\n", "\n");
+    assert_eq!(actual, expected);
+}
+
+#[test]
 fn rejects_tar_hardlink() {
     let tmp = TempDir::new().unwrap();
     let archive = create_tar_hardlink(tmp.path(), "hardlink.tar");

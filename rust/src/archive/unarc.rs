@@ -3,13 +3,17 @@ use std::io::{ErrorKind, Write};
 use std::path::Path;
 
 use anyhow::{anyhow, Context, Result};
-use unarc_rs::unified::{ArchiveEntry, ArchiveFormat, UnifiedArchive};
+use unarc_rs::unified::{ArchiveEntry, ArchiveFormat, ArchiveOptions, UnifiedArchive};
 use unarc_rs::ArchiveError;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
     strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
+
+pub fn extract_arj(file_path: &Path, options: &ExtractOptions) -> Result<()> {
+    extract_unarc(file_path, options, ArchiveFormat::Arj)
+}
 
 pub fn extract_tarz(file_path: &Path, options: &ExtractOptions) -> Result<()> {
     extract_unarc(file_path, options, ArchiveFormat::TarZ)
@@ -34,7 +38,9 @@ pub fn extract_zoo(file_path: &Path, options: &ExtractOptions) -> Result<()> {
 fn extract_unarc(file_path: &Path, options: &ExtractOptions, format: ArchiveFormat) -> Result<()> {
     let file = File::open(file_path)
         .with_context(|| format!("Cannot open file: {}", file_path.display()))?;
-    let mut archive = UnifiedArchive::open_with_format(file, format)
+    let archive_opts =
+        ArchiveOptions::new().with_password(options.password.as_deref().unwrap_or(""));
+    let mut archive = UnifiedArchive::open_with_format_and_options(file, format, archive_opts)
         .with_context(|| format!("Failed to open archive: {}", file_path.display()))?;
 
     if format == ArchiveFormat::Z {

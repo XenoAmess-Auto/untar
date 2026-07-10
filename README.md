@@ -150,6 +150,7 @@ untar --help
 | Unix compress | `.tar.Z`, `.taz` | Unix compress (LZW) compressed tar archive |
 | ACE | `.ace` | ACE archive (decode-only) |
 | ARC/PAK | `.arc`, `.pak` | ARC/PAK archive (decode-only) |
+| ARJ | `.arj` | ARJ archive (decode-only, password support via `--password`) |
 | ZOO | `.zoo` | ZOO archive (decode-only) |
 | Gzip stream | `.gz` | Single gzip-compressed file |
 | BZip2 stream | `.bz2` | Single bzip2-compressed file |

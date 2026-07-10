@@ -128,7 +128,8 @@ untar --help
 | SquashFS | `.squashfs`、`.sqfs`、`.sfs`、`.snap` | SquashFS 文件系统镜像 |
 | RPM | `.rpm` | RPM 软件包 |
 | ACE | `.ace` | ACE 归档 |
-| ARC | `.arc`、`.pak` | ARC/PAK 归档 |
+| ARC/PAK | `.arc`、`.pak` | ARC/PAK 归档 |
+| ARJ | `.arj` | ARJ 归档（支持 `--password` 密码）|
 | ZOO | `.zoo` | ZOO 归档 |
 | 单文件流 | `.gz`、`.bz2`、`.xz`、`.lz`、`.zst`、`.lz4`、`.br`、`.lzma`、`.Z` | 单文件压缩流（`.br` 和 `.lzma` 无固定 magic，依赖扩展名或 `--format`） |
 

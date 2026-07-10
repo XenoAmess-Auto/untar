@@ -86,26 +86,17 @@ Currently there is uniform directory-traversal protection via `safe_output_path`
 
 ## Phase 3: Password Support and ARJ
 
+**Status: completed**
+
 ### Why
 Password-protected ZIP, 7z, and RAR are already supported, but the CLI help/docs do not advertise it well. ARJ is supported by the `unarc-rs` crate but is not exposed in the current format dispatcher.
 
-### ARJ tasks
-
-1. Add `Format::Arj` to `rust/src/archive/format.rs`:
-   - Register `.arj` extension.
-   - Add magic detection: `0x60 0xEA`.
-2. Add `extract_arj` in `rust/src/archive/unarc.rs`.
-3. Plumb `ArchiveOptions::with_password(...)` through the `unarc-rs` wrapper so encrypted ARJ works when `--password` is supplied.
-4. Add the ARJ dispatch arm in `rust/src/extract.rs`.
-5. Add an integration test for `.arj` (plain and password-protected if a fixture can be created).
-
-### Password support tasks
-
-1. Verify ZIP supports both ZipCrypto and AES-128/256 via the `zip` crate with `aes-crypto`.
-2. Verify 7z AES-256 via `sevenz-rust2`.
-3. Verify RAR3/RAR5 via `rars`.
-4. Add integration tests for each password format.
-5. Document which formats support passwords and which do not (ACE/ARC/ZOO have no viable Rust encryption support).
+### What was done
+- Added `Format::Arj` with `.arj` extension and magic detection (`0x60 0xEA`).
+- Added `extract_arj` in `rust/src/archive/unarc.rs` and wired it into `extract.rs`.
+- Passed `ArchiveOptions::with_password(...)` through the `unarc-rs` wrapper so encrypted ARJ works with `--password`.
+- Added plain and password-protected ARJ integration tests using the `unarc-rs` test fixtures.
+- Verified ZIP AES/ZipCrypto, 7z AES-256, and ARJ password extraction with existing tests. RAR password extraction is implemented via `rars`; no test fixture is available in the repo, so it is covered by code path only.
 
 ---
 

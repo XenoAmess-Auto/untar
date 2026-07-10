@@ -32,6 +32,7 @@
 | Unix compress | `.tar.Z`, `.taz`, `.Z` | [unarc-rs](https://crates.io/crates/unarc-rs) | LZW (Unix compress) stream; `.tar.Z` extracts the tar contents |
 | ACE | `.ace` | [unarc-rs](https://crates.io/crates/unarc-rs) | Decode-only |
 | ARC/PAK | `.arc`, `.pak` | [unarc-rs](https://crates.io/crates/unarc-rs) | Decode-only; PAK uses the same reader |
+| ARJ | `.arj` | [unarc-rs](https://crates.io/crates/unarc-rs) | Decode-only; supports `--password` for encrypted archives |
 | ZOO | `.zoo` | [unarc-rs](https://crates.io/crates/unarc-rs) | Decode-only |
 
 ## Single-Stream Compression Formats

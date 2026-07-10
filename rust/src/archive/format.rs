@@ -33,6 +33,7 @@ pub enum Format {
     Z,
     Ace,
     Arc,
+    Arj,
     Zoo,
     Gz,
     Bz2,
@@ -76,6 +77,7 @@ impl Format {
             "z" => Ok(Format::Z),
             "ace" => Ok(Format::Ace),
             "arc" => Ok(Format::Arc),
+            "arj" => Ok(Format::Arj),
             "zoo" => Ok(Format::Zoo),
             "pax" => Ok(Format::Tar),
             "gz" => Ok(Format::Gz),
@@ -122,6 +124,7 @@ impl Format {
             Format::Z => &[".Z"],
             Format::Ace => &[".ace"],
             Format::Arc => &[".arc"],
+            Format::Arj => &[".arj"],
             Format::Zoo => &[".zoo"],
             Format::Gz => &[".gz"],
             Format::Bz2 => &[".bz2"],
@@ -208,6 +211,10 @@ fn is_lzop(buf: &[u8]) -> bool {
 
 fn is_lzip(buf: &[u8]) -> bool {
     starts_with(buf, b"LZIP")
+}
+
+fn is_arj(buf: &[u8]) -> bool {
+    buf.len() >= 2 && buf[0] == 0x60 && buf[1] == 0xEA
 }
 
 fn is_ace(buf: &[u8]) -> bool {
@@ -316,6 +323,10 @@ pub fn detect_format(file_path: &Path, ext_hint: Option<&str>) -> Result<Format>
         return Ok(Format::Arc);
     }
 
+    if is_arj(&buf) {
+        return Ok(Format::Arj);
+    }
+
     if is_zoo(&buf) {
         return Ok(Format::Zoo);
     }
@@ -405,6 +416,7 @@ fn format_from_extension(ext: &str) -> Result<Format> {
         ".z" => Ok(Format::Z),
         ".ace" => Ok(Format::Ace),
         ".arc" => Ok(Format::Arc),
+        ".arj" => Ok(Format::Arj),
         ".zoo" => Ok(Format::Zoo),
         ".pax" => Ok(Format::Tar),
         ".gz" => Ok(Format::Gz),
