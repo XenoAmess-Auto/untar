@@ -46,7 +46,7 @@ gpt_disk_types = "0.16"
 # XAR archive support
 xara = "0.3"
 # LHA / LZH archive support (pinned for Rust 1.65 compatibility)
-delharc = "0.6.2"
+delharc = "0.7.0"
 # SquashFS image support
 backhand = { version = "0.25", default-features = false, features = ["gzip", "xz", "zstd", "lz4"] }
 # RPM package support
