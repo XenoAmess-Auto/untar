@@ -3,7 +3,7 @@ use std::io::{self, IsTerminal};
 use std::path::{Path, PathBuf};
 
 use crate::archive::{
-    ar, cab, cpio, deb, format, iso, lha, rar, rpm, sevenz, squashfs, stream, tar, xar,
+    ar, cab, cpio, deb, format, iso, lha, rar, rpm, sevenz, squashfs, stream, tar, unarc, xar,
     zip as zip_mod,
 };
 use crate::cli::OnExists;
@@ -264,6 +264,7 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         format::Format::TarXz => tar::extract_tar_xz(file, options),
         format::Format::TarBz2 => tar::extract_tar_bz2(file, options),
         format::Format::TarLzma => tar::extract_tar_lzma(file, options),
+        format::Format::TarLz => tar::extract_tar_lz(file, options),
         format::Format::TarZst => tar::extract_tar_zst(file, options),
         format::Format::TarLz4 => tar::extract_tar_lz4(file, options),
         format::Format::TarBr => tar::extract_tar_br(file, options),
@@ -281,6 +282,11 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         format::Format::Squashfs => squashfs::extract_squashfs(file_path, options),
         format::Format::Rpm => rpm::extract_rpm(file_path, options),
         format::Format::TarLzo => tar::extract_tar_lzo(file, options),
+        format::Format::TarZ => unarc::extract_tarz(file_path, options),
+        format::Format::Z => unarc::extract_z(file_path, options),
+        format::Format::Ace => unarc::extract_ace(file_path, options),
+        format::Format::Arc => unarc::extract_arc(file_path, options),
+        format::Format::Zoo => unarc::extract_zoo(file_path, options),
         format::Format::Gz => stream::extract_stream(file, file_path, options, ".gz"),
         format::Format::Bz2 => stream::extract_stream(file, file_path, options, ".bz2"),
         format::Format::Xz => stream::extract_stream(file, file_path, options, ".xz"),
@@ -289,6 +295,7 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         format::Format::Br => stream::extract_stream(file, file_path, options, ".br"),
         format::Format::Lzma => stream::extract_stream(file, file_path, options, ".lzma"),
         format::Format::Lzo => stream::extract_stream(file, file_path, options, ".lzo"),
+        format::Format::Lz => stream::extract_stream(file, file_path, options, ".lz"),
     }
 }
 
@@ -298,10 +305,17 @@ fn extract_extension(file_name_lower: &str) -> Option<&str> {
         ".tar.xz",
         ".tar.bz2",
         ".tar.lzma",
+        ".tar.lz",
         ".tar.zst",
         ".tar.lz4",
         ".tar.br",
         ".tar.lzo",
+        ".tar.z",
+        ".taz",
+        ".z",
+        ".ace",
+        ".arc",
+        ".zoo",
         ".tgz",
         ".txz",
         ".tbz2",
@@ -309,6 +323,10 @@ fn extract_extension(file_name_lower: &str) -> Option<&str> {
         ".tlz",
         ".tzst",
         ".zip",
+        ".apk",
+        ".jar",
+        ".war",
+        ".ear",
         ".7z",
         ".rar",
         ".cab",
@@ -334,6 +352,7 @@ fn extract_extension(file_name_lower: &str) -> Option<&str> {
         ".br",
         ".lzma",
         ".lzo",
+        ".lz",
         ".pax",
     ]
     .into_iter()

@@ -2,6 +2,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs::{self, File};
 use std::io::Write;
+use std::path::Path;
 use tempfile::TempDir;
 
 fn create_tar_gz(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
@@ -104,6 +105,7 @@ enum Compression {
     Bz2,
     Xz,
     Lzma,
+    Lz,
     Zst,
     Lz4,
     Br,
@@ -130,6 +132,12 @@ fn compress_bytes(input: &[u8], kind: Compression) -> Vec<u8> {
             let mut out = Vec::new();
             lzma_rs::lzma_compress(&mut std::io::Cursor::new(input), &mut out).unwrap();
             out
+        }
+        Compression::Lz => {
+            let mut enc =
+                lzma_rust2::LzipWriter::new(Vec::new(), lzma_rust2::LzipOptions::default());
+            enc.write_all(input).unwrap();
+            enc.finish().unwrap()
         }
         Compression::Zst => {
             let mut enc = zstd::stream::write::Encoder::new(Vec::new(), 3).unwrap();
@@ -340,6 +348,41 @@ fn extracts_zip() {
 
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_apk() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip(tmp.path(), "test.apk", &[("a.txt", "A"), ("b/c.txt", "C")]);
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_jar() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip(tmp.path(), "test.jar", &[("a.txt", "A")]);
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
 }
 
 #[test]
@@ -583,6 +626,27 @@ fn extracts_tar_lzma() {
 }
 
 #[test]
+fn extracts_tar_lz() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "test.tar.lz",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+        Compression::Lz,
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
 fn extracts_tar_zst() {
     let tmp = TempDir::new().unwrap();
     let archive = create_tar_compressed(
@@ -643,6 +707,80 @@ fn extracts_tar_br() {
         .success();
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+fn assert_extracts_fixture(
+    archive: &std::path::Path,
+    output: &std::path::Path,
+    expected_file: &str,
+) {
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(output)
+        .arg(archive)
+        .assert()
+        .success();
+    let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs").unwrap();
+    assert_eq!(
+        fs::read_to_string(output.join(expected_file)).unwrap(),
+        expected
+    );
+}
+
+#[test]
+fn extracts_z() {
+    let tmp = TempDir::new().unwrap();
+    let output = tmp.path().join("out");
+    assert_extracts_fixture(
+        Path::new("tests/fixtures/unarc/LICENSE.Z"),
+        &output,
+        "LICENSE",
+    );
+}
+
+#[test]
+fn extracts_tar_z() {
+    let tmp = TempDir::new().unwrap();
+    let output = tmp.path().join("out");
+    assert_extracts_fixture(
+        Path::new("tests/fixtures/unarc/license.tar.Z"),
+        &output,
+        "LICENSE",
+    );
+}
+
+#[test]
+fn extracts_arc() {
+    let tmp = TempDir::new().unwrap();
+    let output = tmp.path().join("out");
+    assert_extracts_fixture(
+        Path::new("tests/fixtures/unarc/store.arc"),
+        &output,
+        "LICENSE",
+    );
+}
+
+#[test]
+fn extracts_ace() {
+    let tmp = TempDir::new().unwrap();
+    let output = tmp.path().join("out");
+    assert_extracts_fixture(
+        Path::new("tests/fixtures/unarc/license1.ace"),
+        &output,
+        "LICENSE",
+    );
+}
+
+#[test]
+fn extracts_zoo() {
+    let tmp = TempDir::new().unwrap();
+    let output = tmp.path().join("out");
+    assert_extracts_fixture(
+        Path::new("tests/fixtures/unarc/store.zoo"),
+        &output,
+        "license",
+    );
 }
 
 #[test]
@@ -757,6 +895,24 @@ fn extracts_br_stream() {
 fn extracts_lzma_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.lzma", b"Hello", Compression::Lzma);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
+}
+
+#[test]
+fn extracts_lz_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_stream(tmp.path(), "test.txt.lz", b"Hello", Compression::Lz);
     let output = tmp.path().join("out");
     Command::cargo_bin("untar")
         .unwrap()

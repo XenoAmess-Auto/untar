@@ -8,6 +8,7 @@ use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
 use liblzma::read::XzDecoder;
 use lz4_flex::frame::FrameDecoder;
+use lzma_rust2::LzipReader;
 use ruzstd::decoding::StreamingDecoder;
 
 use crate::archive::lzo;
@@ -95,6 +96,10 @@ pub fn extract_stream(
         }
         ".br" => {
             let mut decoder = Decompressor::new(reader, 4096);
+            io::copy(&mut decoder, &mut target_file)?
+        }
+        ".lz" => {
+            let mut decoder = LzipReader::new(reader);
             io::copy(&mut decoder, &mut target_file)?
         }
         ".lzma" => {

@@ -12,7 +12,7 @@ A lightweight, fast command-line tool for extracting archives with support for a
 ## Features
 
 - 🚀 **Fast & Lightweight** - Written in Rust with optimized release builds
-- 📦 **Multiple Formats** - Support for `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.txz`, `.tar.bz2`, `.tbz2`, `.tbz`, `.tar.lzma`, `.tlz`, `.tar.zst`, `.tzst`, `.tar.lz4`, `.tar.br`, `.zip`, `.7z`, `.rar`, `.cab`, `.ar`, `.a`, `.cpio`, `.iso`, `.xar`, `.lha`, `.lzh`, `.gz`, `.bz2`, `.xz`, `.zst`, `.lz4`, `.br`, `.lzma`
+- 📦 **Multiple Formats** - Support for `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.txz`, `.tar.bz2`, `.tbz2`, `.tbz`, `.tar.lzma`, `.tlz`, `.tar.lz`, `.tar.zst`, `.tzst`, `.tar.lz4`, `.tar.br`, `.zip`, `.apk`, `.jar`, `.war`, `.ear`, `.7z`, `.rar`, `.cab`, `.ar`, `.a`, `.cpio`, `.iso`, `.xar`, `.lha`, `.lzh`, `.deb`, `.squashfs`, `.sqfs`, `.sfs`, `.snap`, `.rpm`, `.tar.Z`, `.taz`, `.Z`, `.ace`, `.arc`, `.zoo`, `.gz`, `.bz2`, `.xz`, `.lz`, `.zst`, `.lz4`, `.br`, `.lzma`
 - 🖥️ **Cross-Platform** - Linux (x86_64, ARM64) and Windows (x86_64) support
 - 🔧 **Simple Usage** - Intuitive command-line interface
 - 💾 **Preserves Permissions** - Unix file permissions are preserved during extraction

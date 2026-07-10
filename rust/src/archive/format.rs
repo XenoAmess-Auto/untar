@@ -10,6 +10,7 @@ pub enum Format {
     TarXz,
     TarBz2,
     TarLzma,
+    TarLz,
     TarZst,
     TarLz4,
     TarBr,
@@ -28,6 +29,11 @@ pub enum Format {
     Squashfs,
     Rpm,
     TarLzo,
+    TarZ,
+    Z,
+    Ace,
+    Arc,
+    Zoo,
     Gz,
     Bz2,
     Xz,
@@ -36,6 +42,7 @@ pub enum Format {
     Br,
     Lzma,
     Lzo,
+    Lz,
 }
 
 impl Format {
@@ -46,11 +53,12 @@ impl Format {
             "tar.xz" | "txz" => Ok(Format::TarXz),
             "tar.bz2" | "tbz2" | "tbz" => Ok(Format::TarBz2),
             "tar.lzma" | "tlz" => Ok(Format::TarLzma),
+            "tar.lz" => Ok(Format::TarLz),
             "tar.zst" | "tzst" => Ok(Format::TarZst),
             "tar.lz4" => Ok(Format::TarLz4),
             "tar.br" => Ok(Format::TarBr),
             "tar" => Ok(Format::Tar),
-            "zip" => Ok(Format::Zip),
+            "zip" | "apk" | "jar" | "war" | "ear" => Ok(Format::Zip),
             "7z" => Ok(Format::SevenZ),
             "rar" => Ok(Format::Rar),
             "cab" => Ok(Format::Cab),
@@ -64,6 +72,11 @@ impl Format {
             "squashfs" | "sqfs" | "sfs" | "snap" => Ok(Format::Squashfs),
             "rpm" => Ok(Format::Rpm),
             "tar.lzo" => Ok(Format::TarLzo),
+            "tar.z" | "taz" => Ok(Format::TarZ),
+            "z" => Ok(Format::Z),
+            "ace" => Ok(Format::Ace),
+            "arc" => Ok(Format::Arc),
+            "zoo" => Ok(Format::Zoo),
             "pax" => Ok(Format::Tar),
             "gz" => Ok(Format::Gz),
             "bz2" => Ok(Format::Bz2),
@@ -73,6 +86,7 @@ impl Format {
             "br" => Ok(Format::Br),
             "lzma" => Ok(Format::Lzma),
             "lzo" => Ok(Format::Lzo),
+            "lz" => Ok(Format::Lz),
             _ => Err(anyhow!("Unknown format: {s}")),
         }
     }
@@ -85,11 +99,12 @@ impl Format {
             Format::TarXz => &[".tar.xz", ".txz"],
             Format::TarBz2 => &[".tar.bz2", ".tbz2", ".tbz"],
             Format::TarLzma => &[".tar.lzma", ".tlz"],
+            Format::TarLz => &[".tar.lz", ".tlz"],
             Format::TarZst => &[".tar.zst", ".tzst"],
             Format::TarLz4 => &[".tar.lz4"],
             Format::TarBr => &[".tar.br"],
             Format::Tar => &[".tar"],
-            Format::Zip => &[".zip"],
+            Format::Zip => &[".zip", ".apk", ".jar", ".war", ".ear"],
             Format::SevenZ => &[".7z"],
             Format::Rar => &[".rar"],
             Format::Cab => &[".cab"],
@@ -103,6 +118,11 @@ impl Format {
             Format::Squashfs => &[".squashfs", ".sqfs", ".sfs", ".snap"],
             Format::Rpm => &[".rpm"],
             Format::TarLzo => &[".tar.lzo"],
+            Format::TarZ => &[".tar.Z", ".taz"],
+            Format::Z => &[".Z"],
+            Format::Ace => &[".ace"],
+            Format::Arc => &[".arc"],
+            Format::Zoo => &[".zoo"],
             Format::Gz => &[".gz"],
             Format::Bz2 => &[".bz2"],
             Format::Xz => &[".xz"],
@@ -111,6 +131,7 @@ impl Format {
             Format::Br => &[".br"],
             Format::Lzma => &[".lzma"],
             Format::Lzo => &[".lzo"],
+            Format::Lz => &[".lz"],
         }
     }
 }
@@ -185,6 +206,22 @@ fn is_lzop(buf: &[u8]) -> bool {
     starts_with(buf, b"\x89LZO\x00\r\n\x1a\n")
 }
 
+fn is_lzip(buf: &[u8]) -> bool {
+    starts_with(buf, b"LZIP")
+}
+
+fn is_ace(buf: &[u8]) -> bool {
+    buf.len() >= 14 && &buf[7..14] == b"**ACE**"
+}
+
+fn is_arc(buf: &[u8]) -> bool {
+    buf.len() >= 2 && buf[0] == 0x1A && buf[1] >= 1 && buf[1] <= 11
+}
+
+fn is_zoo(buf: &[u8]) -> bool {
+    starts_with(buf, b"ZOO ")
+}
+
 fn compressed_tar_or_stream(magic_format: Format, ext: &str) -> Format {
     let ext_lower = ext.to_lowercase();
     if ext_lower.contains("tar") {
@@ -197,6 +234,7 @@ fn compressed_tar_or_stream(magic_format: Format, ext: &str) -> Format {
             Format::Br => Format::TarBr,
             Format::Lzma => Format::TarLzma,
             Format::Lzo => Format::TarLzo,
+            Format::Lz => Format::TarLz,
             _ => magic_format,
         }
     } else {
@@ -266,6 +304,30 @@ pub fn detect_format(file_path: &Path, ext_hint: Option<&str>) -> Result<Format>
         return Ok(compressed_tar_or_stream(Format::Lzo, ext));
     }
 
+    if is_lzip(&buf) {
+        return Ok(compressed_tar_or_stream(Format::Lz, ext));
+    }
+
+    if is_ace(&buf) {
+        return Ok(Format::Ace);
+    }
+
+    if is_arc(&buf) {
+        return Ok(Format::Arc);
+    }
+
+    if is_zoo(&buf) {
+        return Ok(Format::Zoo);
+    }
+
+    if starts_with(&buf, b"\x1f\x9d") {
+        let ext_lower = ext.to_lowercase();
+        if ext_lower == ".tar.z" || ext_lower == ".taz" {
+            return Ok(Format::TarZ);
+        }
+        return Ok(Format::Z);
+    }
+
     if is_iso(&buf) {
         return Ok(Format::Iso);
     }
@@ -320,6 +382,7 @@ fn format_from_extension(ext: &str) -> Result<Format> {
         ".tar.xz" | ".txz" => Ok(Format::TarXz),
         ".tar.bz2" | ".tbz2" | ".tbz" => Ok(Format::TarBz2),
         ".tar.lzma" | ".tlz" => Ok(Format::TarLzma),
+        ".tar.lz" => Ok(Format::TarLz),
         ".tar.zst" | ".tzst" => Ok(Format::TarZst),
         ".tar.lz4" => Ok(Format::TarLz4),
         ".tar.br" => Ok(Format::TarBr),
@@ -338,6 +401,11 @@ fn format_from_extension(ext: &str) -> Result<Format> {
         ".squashfs" | ".sqfs" | ".sfs" | ".snap" => Ok(Format::Squashfs),
         ".rpm" => Ok(Format::Rpm),
         ".tar.lzo" => Ok(Format::TarLzo),
+        ".tar.z" | ".taz" => Ok(Format::TarZ),
+        ".z" => Ok(Format::Z),
+        ".ace" => Ok(Format::Ace),
+        ".arc" => Ok(Format::Arc),
+        ".zoo" => Ok(Format::Zoo),
         ".pax" => Ok(Format::Tar),
         ".gz" => Ok(Format::Gz),
         ".bz2" => Ok(Format::Bz2),
@@ -347,6 +415,7 @@ fn format_from_extension(ext: &str) -> Result<Format> {
         ".br" => Ok(Format::Br),
         ".lzma" => Ok(Format::Lzma),
         ".lzo" => Ok(Format::Lzo),
+        ".lz" => Ok(Format::Lz),
         _ => Err(anyhow!("Unknown extension: {ext}")),
     }
 }

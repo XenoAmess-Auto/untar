@@ -12,7 +12,7 @@
 ## 功能特性
 
 - 🚀 **快速轻量** - 使用 Rust 编写，经过优化的 Release 构建
-- 📦 **多种格式** - 支持 `.tar`、`.tar.gz`、`.tgz`、`.tar.xz`、`.tar.bz2`、`.zip`
+- 📦 **多种格式** - 支持 `.tar`、`.tar.gz`、`.tgz`、`.tar.xz`、`.txz`、`.tar.bz2`、`.tbz2`、`.tbz`、`.tar.lzma`、`.tlz`、`.tar.lz`、`.tar.zst`、`.tzst`、`.tar.lz4`、`.tar.br`、`.zip`、`.apk`、`.jar`、`.war`、`.ear`、`.7z`、`.rar`、`.cab`、`.ar`、`.a`、`.cpio`、`.iso`、`.xar`、`.lha`、`.lzh`、`.deb`、`.squashfs`、`.sqfs`、`.sfs`、`.snap`、`.rpm`、`.tar.Z`、`.taz`、`.Z`、`.ace`、`.arc`、`.zoo`、`.gz`、`.bz2`、`.xz`、`.lz`、`.zst`、`.lz4`、`.br`、`.lzma`
 - 🖥️ **跨平台** - 支持 Linux (x86_64、ARM64) 和 Windows (x86_64)
 - 🔧 **简单易用** - 直观的命令行界面
 - 💾 **保留权限** - 在解压过程中保留 Unix 文件权限
@@ -106,9 +106,31 @@ untar --help
 |------|--------|------|
 | Tar | `.tar` | 未压缩的 tar 归档 |
 | Gzip | `.tar.gz`、`.tgz` | Gzip 压缩的 tar 归档 |
-| XZ | `.tar.xz` | XZ 压缩的 tar 归档 |
-| BZip2 | `.tar.bz2` | BZip2 压缩的 tar 归档 |
-| Zip | `.zip` | ZIP 归档 |
+| XZ | `.tar.xz`、`.txz` | XZ 压缩的 tar 归档 |
+| BZip2 | `.tar.bz2`、`.tbz2`、`.tbz` | BZip2 压缩的 tar 归档 |
+| LZMA | `.tar.lzma`、`.tlz` | LZMA 压缩的 tar 归档 |
+| LZIP | `.tar.lz` | LZIP 压缩的 tar 归档 |
+| Zstandard | `.tar.zst`、`.tzst` | Zstandard 压缩的 tar 归档 |
+| LZ4 | `.tar.lz4` | LZ4 压缩的 tar 归档 |
+| Brotli | `.tar.br` | Brotli 压缩的 tar 归档 |
+| LZO | `.tar.lzo` | LZO/lzop 压缩的 tar 归档 |
+| Unix compress | `.tar.Z`、`.taz` | Unix compress (LZW) 压缩的 tar 归档 |
+| ZIP | `.zip`、`.apk`、`.jar`、`.war`、`.ear` | ZIP 归档（APK/JAR/WAR/EAR 视为 ZIP） |
+| 7-Zip | `.7z` | 7-Zip 归档 |
+| RAR | `.rar` | RAR 归档 |
+| Cabinet | `.cab` | Windows Cabinet 文件 |
+| Unix Archive | `.ar`、`.a` | Unix 归档 |
+| CPIO | `.cpio` | CPIO 归档 |
+| ISO 9660 | `.iso` | ISO 镜像 |
+| XAR | `.xar` | macOS XAR 归档 |
+| LHA/LZH | `.lha`、`.lzh` | LHA/LZH 归档 |
+| Debian | `.deb` | Debian 软件包 |
+| SquashFS | `.squashfs`、`.sqfs`、`.sfs`、`.snap` | SquashFS 文件系统镜像 |
+| RPM | `.rpm` | RPM 软件包 |
+| ACE | `.ace` | ACE 归档 |
+| ARC | `.arc`、`.pak` | ARC/PAK 归档 |
+| ZOO | `.zoo` | ZOO 归档 |
+| 单文件流 | `.gz`、`.bz2`、`.xz`、`.lz`、`.zst`、`.lz4`、`.br`、`.lzma`、`.Z` | 单文件压缩流（`.br` 和 `.lzma` 无固定 magic，依赖扩展名或 `--format`） |
 
 ### 命令行选项
 

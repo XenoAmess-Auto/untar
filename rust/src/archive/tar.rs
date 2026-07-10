@@ -9,6 +9,7 @@ use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
 use liblzma::read::XzDecoder;
 use lz4_flex::frame::FrameDecoder;
+use lzma_rust2::LzipReader;
 use tar::Archive;
 
 use crate::archive::lzo;
@@ -36,6 +37,10 @@ pub fn extract_tar_lzma<R: Read>(reader: R, options: &ExtractOptions) -> Result<
     let file = temp.as_file_mut();
     file.rewind()?;
     extract_tar_reader(file, options)
+}
+
+pub fn extract_tar_lz<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
+    extract_tar_reader(BufReader::new(LzipReader::new(reader)), options)
 }
 
 pub fn extract_tar_zst<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {

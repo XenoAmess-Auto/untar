@@ -191,6 +191,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
+name = "bitstream-io"
+version = "4.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7eff00be299a18769011411c9def0d827e8f2d7bf0c3dbf53633147a8867fd1f"
+dependencies = [
+ "no_std_io2",
+]
+
+[[package]]
 name = "bitvec"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -228,6 +237,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8894febbff9f758034a5b8e12d87918f56dfc64a8e1fe757d65e29041538d93"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "blowfish"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62ce3946557b35e71d1bbe07ec385073ce9eda05043f95de134eb578fcf1a298"
+dependencies = [
+ "byteorder",
+ "cipher 0.5.2",
 ]
 
 [[package]]
@@ -359,7 +378,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
 dependencies = [
  "iana-time-zone",
+ "js-sys",
  "num-traits",
+ "wasm-bindgen",
  "windows-link",
 ]
 
@@ -531,6 +552,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "217698eaf96b4a3f0bc4f3662aaa55bdf913cd54d7204591faa790070c6d0853"
 
 [[package]]
+name = "crc16"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "338089f42c427b86394a5ee60ff321da23a5c89c9d89514c829687b26359fcff"
+
+[[package]]
 name = "crc32fast"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -601,6 +628,12 @@ dependencies = [
  "quote",
  "syn 2.0.117",
 ]
+
+[[package]]
+name = "deflate64"
+version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac6b926516df9c60bfa16e107b21086399f8285a44ca9711344b9e553c5146e2"
 
 [[package]]
 name = "deku"
@@ -1151,6 +1184,9 @@ name = "lzma-rust2"
 version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca93e534d1142d1d0dcca6d25fe302508a5dfb40b302802904577725ea0b695b"
+dependencies = [
+ "sha2 0.11.0",
+]
 
 [[package]]
 name = "lzo"
@@ -1583,6 +1619,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "salzweg"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29a9ec85db1460d952e6556b945c1f3e287ddb44b79d6d72171daac24d4950d2"
+
+[[package]]
 name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1646,6 +1688,17 @@ dependencies = [
  "ppmd-rust",
  "sha2 0.10.9",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "sha-1"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5058ada175748e33390e40e872bd0fe59a19f265d0158daa551c5a88a76009c"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.2.17",
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -1817,6 +1870,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18dfaaeddcb932337b5e7866ee7d0ce9b76d2fd092997146f187ec09b4558a50"
 dependencies = [
  "deranged",
+ "js-sys",
  "num-conv",
  "powerfmt",
  "serde_core",
@@ -1927,6 +1981,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "unarc-rs"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65d77fdbf93788ac069a054e77ee1ef9be1f2b718578ecb206750a6ae9fc0a2e"
+dependencies = [
+ "bitstream-io",
+ "blowfish",
+ "byteorder",
+ "bzip2",
+ "chrono",
+ "crc16",
+ "crc32fast",
+ "delharc",
+ "flate2",
+ "log",
+ "salzweg",
+ "sevenz-rust2",
+ "sha-1",
+ "tar",
+ "thiserror",
+ "unrar",
+ "zip",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1943,6 +2022,29 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "unrar"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92ec61343a630d2b50d13216dea5125e157d3fc180a7d3f447d22fe146b648fc"
+dependencies = [
+ "bitflags",
+ "regex",
+ "unrar_sys",
+ "widestring",
+]
+
+[[package]]
+name = "unrar_sys"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b77675b883cfbe6bf41e6b7a5cd6008e0a83ba497de3d96e41a064bbeead765"
+dependencies = [
+ "cc",
+ "libc",
+ "winapi",
+]
 
 [[package]]
 name = "untar"
@@ -1970,6 +2072,7 @@ dependencies = [
  "liblzma",
  "lz4_flex 0.13.1",
  "lzma-rs",
+ "lzma-rust2",
  "lzo",
  "lzokay",
  "predicates",
@@ -1979,6 +2082,7 @@ dependencies = [
  "sevenz-rust2",
  "tar",
  "tempfile",
+ "unarc-rs",
  "xara",
  "zip",
  "zstd",
@@ -2117,6 +2221,34 @@ dependencies = [
  "js-sys",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "widestring"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72069c3113ab32ab29e5584db3c6ec55d416895e60715417b5b883a357c3e471"
+
+[[package]]
+name = "winapi"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c839a674fcd7a98952e593242ea400abe93992746761e38641405d28b00f419"
+dependencies = [
+ "winapi-i686-pc-windows-gnu",
+ "winapi-x86_64-pc-windows-gnu",
+]
+
+[[package]]
+name = "winapi-i686-pc-windows-gnu"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
+
+[[package]]
+name = "winapi-x86_64-pc-windows-gnu"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "windows-core"
@@ -2440,18 +2572,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
 dependencies = [
  "aes 0.9.1",
+ "bitstream-io",
+ "bzip2",
  "constant_time_eq",
  "crc32fast",
+ "deflate64",
  "flate2",
  "getrandom",
  "hmac",
  "indexmap",
+ "lzma-rust2",
  "memchr",
  "pbkdf2",
+ "ppmd-rust",
  "sha1 0.11.0",
+ "time",
  "typed-path",
  "zeroize",
  "zopfli",
+ "zstd",
 ]
 
 [[package]]

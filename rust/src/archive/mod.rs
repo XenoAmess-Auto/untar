@@ -12,5 +12,6 @@ pub mod sevenz;
 pub mod squashfs;
 pub mod stream;
 pub mod tar;
+pub mod unarc;
 pub mod xar;
 pub mod zip;

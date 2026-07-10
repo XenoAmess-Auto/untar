@@ -11,11 +11,12 @@
 | XZ-compressed Tar | `.tar.xz`, `.txz` | [tar](https://crates.io/crates/tar) + [liblzma](https://crates.io/crates/liblzma) | |
 | BZip2-compressed Tar | `.tar.bz2`, `.tbz2`, `.tbz` | [tar](https://crates.io/crates/tar) + [bzip2](https://crates.io/crates/bzip2) | |
 | LZMA-compressed Tar | `.tar.lzma`, `.tlz` | [tar](https://crates.io/crates/tar) + [lzma-rs](https://crates.io/crates/lzma-rs) | Decompressed to a temporary file before tar extraction |
+| LZIP-compressed Tar | `.tar.lz`, `.tlz` | [tar](https://crates.io/crates/tar) + [lzma-rust2](https://crates.io/crates/lzma-rust2) | |
 | Zstandard-compressed Tar | `.tar.zst`, `.tzst` | [tar](https://crates.io/crates/tar) + [ruzstd](https://crates.io/crates/ruzstd) | |
 | LZ4-compressed Tar | `.tar.lz4` | [tar](https://crates.io/crates/tar) + [lz4_flex](https://crates.io/crates/lz4_flex) | |
 | Brotli-compressed Tar | `.tar.br` | [tar](https://crates.io/crates/tar) + [brotli-decompressor](https://crates.io/crates/brotli-decompressor) | |
 | LZO-compressed Tar | `.tar.lzo` | [tar](https://crates.io/crates/tar) + [lzo](https://crates.io/crates/lzo) | lzop file format |
-| ZIP | `.zip` | [zip](https://crates.io/crates/zip) | Supports AES password-protected archives (`--password`) |
+| ZIP | `.zip`, `.apk`, `.jar`, `.war`, `.ear` | [zip](https://crates.io/crates/zip) | Supports AES password-protected archives (`--password`); APK/JAR/WAR/EAR are treated as ZIP |
 | 7-Zip | `.7z` | [sevenz-rust2](https://crates.io/crates/sevenz-rust2) | Supports password-protected archives (`--password`) |
 | RAR | `.rar` | [rars](https://crates.io/crates/rars) | Decode-only |
 | Cabinet | `.cab` | [cab](https://crates.io/crates/cab) | Windows Cabinet files; directory separators are normalized to `/` |
@@ -28,6 +29,10 @@
 | SquashFS | `.squashfs`, `.sqfs`, `.sfs`, `.snap` | [backhand](https://crates.io/crates/backhand) | gzip/xz/zstd/lz4 compressed images |
 | RPM package | `.rpm` | [rpm](https://crates.io/crates/rpm) | gzip/bzip2/xz/zstd payloads |
 | POSIX pax | `.pax` | [tar](https://crates.io/crates/tar) | Treated as a tar archive |
+| Unix compress | `.tar.Z`, `.taz`, `.Z` | [unarc-rs](https://crates.io/crates/unarc-rs) | LZW (Unix compress) stream; `.tar.Z` extracts the tar contents |
+| ACE | `.ace` | [unarc-rs](https://crates.io/crates/unarc-rs) | Decode-only |
+| ARC/PAK | `.arc`, `.pak` | [unarc-rs](https://crates.io/crates/unarc-rs) | Decode-only; PAK uses the same reader |
+| ZOO | `.zoo` | [unarc-rs](https://crates.io/crates/unarc-rs) | Decode-only |
 
 ## Single-Stream Compression Formats
 
@@ -38,21 +43,19 @@ These formats contain exactly one compressed file. `untar` decompresses the inpu
 | Gzip | `.gz` | [flate2](https://crates.io/crates/flate2) | |
 | BZip2 | `.bz2` | [bzip2](https://crates.io/crates/bzip2) | |
 | XZ | `.xz` | [liblzma](https://crates.io/crates/liblzma) | |
+| LZIP | `.lz` | [lzma-rust2](https://crates.io/crates/lzma-rust2) | |
 | Zstandard | `.zst` | [ruzstd](https://crates.io/crates/ruzstd) | |
 | LZ4 | `.lz4` | [lz4_flex](https://crates.io/crates/lz4_flex) | |
 | Brotli | `.br` | [brotli-decompressor](https://crates.io/crates/brotli-decompressor) | No fixed magic; extension or `--format` required |
 | LZMA | `.lzma` | [lzma-rs](https://crates.io/crates/lzma-rs) | No fixed magic; extension or `--format` required |
 | LZO/lzop | `.lzo` | [lzo](https://crates.io/crates/lzo) | |
 
-## Explicitly Unsupported Formats
+## Magic Detection Notes
 
-These formats are intentionally excluded because there is no mature, pure-Rust implementation available:
+Most formats are detected by their magic number, so renaming or omitting the extension still works. The following formats have no reliable magic signature and can only be identified by their extension or via `--format`:
 
-- `.tar.lz` (LZIP)
-- `.tar.Z` (Unix `compress`)
-- `.ace`
-- `.arc`
-- `.zoo`
+- `.br` (Brotli): the Brotli stream header is a variable-size window field, not a fixed magic number.
+- `.lzma` (raw LZMA): the 13-byte header contains compression parameters, not a magic number, and the constraints are too weak for robust detection.
 
 ## Common Options
 

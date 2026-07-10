@@ -22,8 +22,10 @@ zip = { version = "8", default-features = false, features = ["deflate", "aes-cry
 sevenz-rust2 = "0.20.2"
 # RAR archive support
 rars = "0.4"
-# TAR LZMA extension
+# TAR LZMA extension (raw .lzma / .tar.lzma)
 lzma-rs = "0.3"
+# TAR lzip / .lz
+lzma-rust2 = "0.16"
 # TAR zstd / .zst stream
 ruzstd = "0.8"
 # TAR lz4 / .lz4 stream
@@ -49,6 +51,8 @@ delharc = "0.6.2"
 backhand = { version = "0.25", default-features = false, features = ["gzip", "xz", "zstd", "lz4"] }
 # RPM package support
 rpm = { version = "0.25", default-features = false, features = ["payload", "gzip-compression", "bzip2-compression", "xz-compression", "zstd-compression"] }
+# Legacy archive formats: ACE, ARC, ZOO, Unix compress (.Z / .tar.Z)
+unarc-rs = "0.6"
 # LZO1X decompression for .lzo / .tar.lzo
 lzo = "0.1"
 
