@@ -45,6 +45,10 @@ pub struct Args {
     #[arg(long = "strip-components")]
     pub strip_components: Option<usize>,
 
+    /// Password for encrypted archives.
+    #[arg(short = 'p', long)]
+    pub password: Option<String>,
+
     /// Archive file to extract.
     #[arg(value_name = "FILE", index = 1)]
     pub file: Option<String>,

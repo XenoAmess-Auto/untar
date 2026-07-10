@@ -39,6 +39,40 @@ fn create_zip(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std:
     path
 }
 
+fn create_password_zip(
+    dir: &std::path::Path,
+    name: &str,
+    password: &str,
+    files: &[(&str, &str)],
+) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .with_aes_encryption(zip::AesMode::Aes256, password);
+
+    for (name, content) in files {
+        zip.start_file(*name, options).unwrap();
+        zip.write_all(content.as_bytes()).unwrap();
+    }
+
+    zip.finish().unwrap();
+    path
+}
+
+fn create_7z(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let input = dir.join("7z_input");
+    for (name, content) in files {
+        let file_path = input.join(name);
+        fs::create_dir_all(file_path.parent().unwrap()).unwrap();
+        fs::write(&file_path, content).unwrap();
+    }
+    sevenz_rust2::compress_to_path(&input, &path).unwrap();
+    path
+}
+
 #[test]
 fn extracts_tar_gz() {
     let tmp = TempDir::new().unwrap();
@@ -88,7 +122,7 @@ fn extracts_zip() {
 #[test]
 fn rejects_unsupported_format() {
     let tmp = TempDir::new().unwrap();
-    let archive = tmp.path().join("test.rar");
+    let archive = tmp.path().join("test.unknown");
     fs::write(&archive, "not a real archive").unwrap();
 
     Command::cargo_bin("untar")
@@ -255,6 +289,43 @@ fn shows_version() {
         .assert()
         .success()
         .stdout(predicate::str::contains("untar"));
+}
+
+#[test]
+fn extracts_7z() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_7z(tmp.path(), "test.7z", &[("a.txt", "A"), ("b/c.txt", "C")]);
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_password_zip() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_password_zip(tmp.path(), "test.zip", "secret", &[("a.txt", "A")]);
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--password")
+        .arg("secret")
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
 }
 
 #[test]

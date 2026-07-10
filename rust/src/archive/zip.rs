@@ -20,7 +20,13 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
     }
 
     for i in 0..total_count {
-        let mut entry = archive.by_index(i)?;
+        let mut entry = if let Some(password) = &options.password {
+            archive
+                .by_index_decrypt(i, password.as_bytes())
+                .map_err(|e| anyhow::anyhow!("Failed to decrypt zip entry: {e}"))?
+        } else {
+            archive.by_index(i)?
+        };
         let name = entry.name().to_string();
         let size = entry.size();
 

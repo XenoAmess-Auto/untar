@@ -23,15 +23,16 @@ fn main() {
         }
     };
 
-    let options = ExtractOptions::new(
-        args.output_dir(),
-        args.quiet,
-        args.list,
-        args.on_exists,
-        args.rename_suffix,
-        args.strip_components,
-        args.patterns,
-    );
+    let options = ExtractOptions {
+        output_dir: args.output_dir(),
+        quiet: args.quiet,
+        list: args.list,
+        on_exists: args.on_exists,
+        rename_suffix: args.rename_suffix,
+        strip_components: args.strip_components,
+        patterns: args.patterns,
+        password: args.password,
+    };
 
     if let Err(e) = extract::extract_archive(Path::new(&file), &options) {
         eprintln!("Error: {e}");

@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use std::io::{self, IsTerminal};
 use std::path::{Path, PathBuf};
 
-use crate::archive::{tar, zip as zip_mod};
+use crate::archive::{rar, sevenz, tar, zip as zip_mod};
 use crate::cli::OnExists;
 
 /// Options controlling extraction or listing.
@@ -15,28 +15,7 @@ pub struct ExtractOptions {
     pub rename_suffix: String,
     pub strip_components: Option<usize>,
     pub patterns: Vec<String>,
-}
-
-impl ExtractOptions {
-    pub fn new(
-        output_dir: PathBuf,
-        quiet: bool,
-        list: bool,
-        on_exists: OnExists,
-        rename_suffix: String,
-        strip_components: Option<usize>,
-        patterns: Vec<String>,
-    ) -> Self {
-        Self {
-            output_dir,
-            quiet,
-            list,
-            on_exists,
-            rename_suffix,
-            strip_components,
-            patterns,
-        }
-    }
+    pub password: Option<String>,
 }
 
 /// Information about an archive entry for listing.
@@ -234,11 +213,15 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         tar::extract_tar_bz2(file, options)?;
     } else if file_name_lower.ends_with(".zip") {
         zip_mod::extract_zip(file, options)?;
+    } else if file_name_lower.ends_with(".7z") {
+        sevenz::extract_7z(file, options)?;
+    } else if file_name_lower.ends_with(".rar") {
+        rar::extract_rar(file_path, options)?;
     } else if file_name_lower.ends_with(".tar") {
         tar::extract_tar(file, options)?;
     } else {
         return Err(anyhow!(
-            "Unsupported archive format. Please use a known extension (.tar, .tar.gz, .tgz, .tar.xz, .tar.bz2, .zip)"
+            "Unsupported archive format. Please use a known extension (.tar, .tar.gz, .tgz, .tar.xz, .tar.bz2, .zip, .7z, .rar)"
         ));
     }
 
