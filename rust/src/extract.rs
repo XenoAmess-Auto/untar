@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use std::io::{self, IsTerminal};
 use std::path::{Path, PathBuf};
 
-use crate::archive::{rar, sevenz, stream, tar, zip as zip_mod};
+use crate::archive::{ar, cab, cpio, iso, lha, rar, sevenz, stream, tar, xar, zip as zip_mod};
 use crate::cli::OnExists;
 
 /// Options controlling extraction or listing.
@@ -270,6 +270,18 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         sevenz::extract_7z(file, options)?;
     } else if file_name_lower.ends_with(".rar") {
         rar::extract_rar(file_path, options)?;
+    } else if file_name_lower.ends_with(".cab") {
+        cab::extract_cab(file_path, options)?;
+    } else if file_name_lower.ends_with(".ar") || file_name_lower.ends_with(".a") {
+        ar::extract_ar(file_path, options)?;
+    } else if file_name_lower.ends_with(".cpio") {
+        cpio::extract_cpio(file_path, options)?;
+    } else if file_name_lower.ends_with(".iso") {
+        iso::extract_iso(file_path, options)?;
+    } else if file_name_lower.ends_with(".xar") {
+        xar::extract_xar(file_path, options)?;
+    } else if file_name_lower.ends_with(".lha") || file_name_lower.ends_with(".lzh") {
+        lha::extract_lha(file_path, options)?;
     } else if file_name_lower.ends_with(".tar") {
         tar::extract_tar(file, options)?;
     } else if file_name_lower.ends_with(".gz") {
@@ -288,7 +300,7 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         stream::extract_stream(file, file_path, options, ".lzma")?;
     } else {
         return Err(anyhow!(
-            "Unsupported archive format. Please use a known extension (.tar, .tar.gz, .tgz, .tar.xz, .txz, .tar.bz2, .tbz2, .tbz, .tar.lzma, .tlz, .tar.zst, .tzst, .tar.lz4, .tar.br, .zip, .7z, .rar, .gz, .bz2, .xz, .zst, .lz4, .br, .lzma)"
+            "Unsupported archive format. Please use a known extension (.tar, .tar.gz, .tgz, .tar.xz, .txz, .tar.bz2, .tbz2, .tbz, .tar.lzma, .tlz, .tar.zst, .tzst, .tar.lz4, .tar.br, .zip, .7z, .rar, .cab, .ar, .a, .cpio, .iso, .xar, .lha, .lzh, .gz, .bz2, .xz, .zst, .lz4, .br, .lzma)"
         ));
     }
 

@@ -1,5 +1,11 @@
+pub mod ar;
+pub mod cab;
+pub mod cpio;
+pub mod iso;
+pub mod lha;
 pub mod rar;
 pub mod sevenz;
 pub mod stream;
 pub mod tar;
+pub mod xar;
 pub mod zip;

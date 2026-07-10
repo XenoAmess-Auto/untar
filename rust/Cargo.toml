@@ -30,6 +30,21 @@ ruzstd = "0.8"
 lz4_flex = "0.13"
 # TAR brotli / .br stream
 brotli-decompressor = "5"
+# Windows Cabinet archive support
+cab = "0.6"
+# Unix archive (.ar) support
+ar = "0.9"
+# cpio archive support
+cpio = "0.4"
+# ISO 9660 image support
+iso9660-rs = "1.0"
+# Block I/O trait used by iso9660-rs
+gpt_disk_io = { version = "0.16", features = ["std"] }
+gpt_disk_types = "0.16"
+# XAR archive support
+xara = "0.3"
+# LHA / LZH archive support (pinned for Rust 1.65 compatibility)
+delharc = "0.6.2"
 
 # Use anyhow for error handling (minimal overhead)
 anyhow = "1.0"

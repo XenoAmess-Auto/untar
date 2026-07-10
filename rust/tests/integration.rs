@@ -160,6 +160,117 @@ fn create_stream(
     path
 }
 
+fn create_ar(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let mut builder = ar::Builder::new(Vec::new());
+    for (name, content) in files {
+        let mut header = ar::Header::new(name.as_bytes().to_vec(), content.len() as u64);
+        header.set_mode(0o100644);
+        builder.append(&header, content.as_bytes()).unwrap();
+    }
+    fs::write(&path, builder.into_inner().unwrap()).unwrap();
+    path
+}
+
+fn create_cpio(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let mut inputs: Vec<(cpio::NewcBuilder, std::io::Cursor<Vec<u8>>)> = Vec::new();
+    for (idx, (name, content)) in files.iter().enumerate() {
+        let builder = cpio::NewcBuilder::new(*name)
+            .ino(idx as u32 + 1)
+            .uid(1000)
+            .gid(1000)
+            .mode(0o100644);
+        inputs.push((builder, std::io::Cursor::new(content.as_bytes().to_vec())));
+    }
+    let output = cpio::write_cpio(inputs.into_iter(), Vec::new()).unwrap();
+    fs::write(&path, output).unwrap();
+    path
+}
+
+fn create_cab(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let mut cab_builder = cab::CabinetBuilder::new();
+    let folder = cab_builder.add_folder(cab::CompressionType::None);
+    for (name, _) in files {
+        folder.add_file(*name);
+    }
+    let cab_file = File::create(&path).unwrap();
+    let mut cab_writer = cab_builder.build(cab_file).unwrap();
+    let mut idx = 0;
+    while let Some(mut writer) = cab_writer.next_file().unwrap() {
+        let (_, content) = files[idx];
+        writer.write_all(content.as_bytes()).unwrap();
+        idx += 1;
+    }
+    cab_writer.finish().unwrap();
+    path
+}
+
+fn create_xar(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let mut toc = String::from(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<xar>
+  <toc>"#,
+    );
+    let mut offset = 0u64;
+    let mut heap = Vec::new();
+    for (id, (name, content)) in files.iter().enumerate() {
+        let len = content.len() as u64;
+        toc.push_str(&format!(
+            "\n    <file id=\"{}\">\n      <name>{}</name>\n      <type>file</type>\n      <data>\n        <offset>{}</offset>\n        <length>{}</length>\n        <size>{}</size>\n        <encoding style=\"application/octet-stream\"/>\n      </data>\n    </file>",
+            id + 1,
+            name,
+            offset,
+            len,
+            len
+        ));
+        heap.extend_from_slice(content.as_bytes());
+        offset += len;
+    }
+    toc.push_str("\n  </toc>\n</xar>");
+    let toc_xml = toc.into_bytes();
+
+    let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    encoder.write_all(&toc_xml).unwrap();
+    let compressed_toc = encoder.finish().unwrap();
+
+    let mut xar_buf = Vec::new();
+    xar_buf.extend_from_slice(&0x78617221u32.to_be_bytes());
+    xar_buf.extend_from_slice(&28u16.to_be_bytes());
+    xar_buf.extend_from_slice(&1u16.to_be_bytes());
+    xar_buf.extend_from_slice(&(compressed_toc.len() as u64).to_be_bytes());
+    xar_buf.extend_from_slice(&(toc_xml.len() as u64).to_be_bytes());
+    xar_buf.extend_from_slice(&0u32.to_be_bytes());
+    xar_buf.extend_from_slice(&compressed_toc);
+    xar_buf.extend_from_slice(&heap);
+
+    fs::write(&path, xar_buf).unwrap();
+    path
+}
+
+fn create_iso(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let input = dir.join("iso_input");
+    for (name, content) in files {
+        let file_path = input.join(name);
+        fs::create_dir_all(file_path.parent().unwrap()).unwrap();
+        fs::write(&file_path, content).unwrap();
+    }
+    std::process::Command::new("xorriso")
+        .arg("-as")
+        .arg("mkisofs")
+        .arg("-R")
+        .arg("-J")
+        .arg("-o")
+        .arg(&path)
+        .arg(&input)
+        .status()
+        .expect("xorriso failed to create ISO");
+    path
+}
+
 #[test]
 fn extracts_tar_gz() {
     let tmp = TempDir::new().unwrap();
@@ -633,4 +744,88 @@ fn extracts_lzma_stream() {
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
     );
+}
+
+#[test]
+fn extracts_ar() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_ar(tmp.path(), "test.a", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_cpio() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_cpio(
+        tmp.path(),
+        "test.cpio",
+        &[("./a.txt", "A"), ("./b/c.txt", "C")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_cab() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_cab(tmp.path(), "test.cab", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_xar() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_xar(tmp.path(), "test.xar", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_iso() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_iso(tmp.path(), "test.iso", &[("A.TXT", "A"), ("B/C.TXT", "C")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("A.TXT")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("B/C.TXT")).unwrap(), "C");
 }
