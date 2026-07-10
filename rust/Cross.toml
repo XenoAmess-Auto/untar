@@ -4,5 +4,5 @@
 # container needs a C++ toolchain and libstdc++ headers.
 [build]
 pre-build = [
-    "apt-get update && apt-get install -y build-essential libstdc++-dev",
+    "apt-get update && apt-get install -y build-essential g++",
 ]
