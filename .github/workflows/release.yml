@@ -139,9 +139,8 @@ jobs:
 
       - name: Install nfpm
         run: |
-          echo 'deb [trusted=yes] https://repo.goreleaser.io/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
-          sudo apt-get update
-          sudo apt-get install -y nfpm
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
       - name: Set arch variables
         id: arch_vars
