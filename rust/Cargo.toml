@@ -71,7 +71,7 @@ assert_cmd = "2"
 predicates = "3"
 # Test encoders for formats without Rust Write wrappers in [dependencies]
 zstd = "0.13"
-brotli = "7"
+brotli = "8"
 lzokay = "2"
 adler = "1"
 
