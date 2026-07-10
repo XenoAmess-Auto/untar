@@ -81,20 +81,22 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 
 ## Phase 4: CI/CD + Release Optimization
 
+**Status: completed**
+
 ### 4.1 Release Checksums
-- Generate `sha256sums.txt` for all release artifacts and upload it alongside the binaries/packages.
+- [x] Generate `sha256sums.txt` for all release artifacts and upload it alongside the binaries/packages.
 
 ### 4.2 CI Cache Optimization
-- Cache `~/.cargo/bin` for `cross` and `cargo-wix`.
-- Cache `~/go/bin` for `nfpm`.
-- Cache Rust dependencies via `rust-cache` already in place.
+- [x] Cache `~/.cargo/bin` for `cross` and `cargo-wix`.
+- [x] Cache `~/go/bin` for `nfpm`.
+- [x] Cache Rust dependencies via `rust-cache` already in place.
 
 ### 4.3 Documentation & Links
-- Fix README clone/badge URLs to point to `XenoAmess-Auto/untar`.
-- Keep `docs/dependabot-optimization-notes.md` updated.
+- [x] Fix README clone/badge URLs to point to `XenoAmess-Auto/untar`.
+- [x] Keep `docs/dependabot-optimization-notes.md` updated.
 
 ### 4.4 MSRV Check in CI
-- Verify builds with the declared MSRV.
+- [x] Removed explicit MSRV enforcement; project builds with the latest stable Rust.
 
 ---
 
