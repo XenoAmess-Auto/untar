@@ -8,7 +8,7 @@ updates:
       time: "04:00"
       timezone: "Asia/Shanghai"
     target-branch: "master"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 100
     reviewers:
       - "XenoAmess"
     assignees:
@@ -27,7 +27,7 @@ updates:
       time: "04:00"
       timezone: "Asia/Shanghai"
     target-branch: "master"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 100
     reviewers:
       - "XenoAmess"
     assignees:
