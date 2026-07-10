@@ -19,7 +19,7 @@ flate2 = { version = "1.1", default-features = false, features = ["zlib"] }
 # Zip archive support (with AES encryption for password-protected archives)
 zip = { version = "8", default-features = false, features = ["deflate", "aes-crypto"] }
 # 7z archive support
-sevenz-rust2 = "0.20.2"
+sevenz-rust2 = "0.21.3"
 # RAR archive support
 rars = "0.4"
 # TAR LZMA extension (raw .lzma / .tar.lzma)
