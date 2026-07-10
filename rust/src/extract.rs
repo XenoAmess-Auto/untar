@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use std::io::{self, IsTerminal};
 use std::path::{Path, PathBuf};
 
-use crate::archive::{rar, sevenz, tar, zip as zip_mod};
+use crate::archive::{rar, sevenz, stream, tar, zip as zip_mod};
 use crate::cli::OnExists;
 
 /// Options controlling extraction or listing.
@@ -249,10 +249,21 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
 
     if file_name_lower.ends_with(".tar.gz") || file_name_lower.ends_with(".tgz") {
         tar::extract_tar_gz(file, options)?;
-    } else if file_name_lower.ends_with(".tar.xz") {
+    } else if file_name_lower.ends_with(".tar.xz") || file_name_lower.ends_with(".txz") {
         tar::extract_tar_xz(file, options)?;
-    } else if file_name_lower.ends_with(".tar.bz2") {
+    } else if file_name_lower.ends_with(".tar.bz2")
+        || file_name_lower.ends_with(".tbz2")
+        || file_name_lower.ends_with(".tbz")
+    {
         tar::extract_tar_bz2(file, options)?;
+    } else if file_name_lower.ends_with(".tar.lzma") || file_name_lower.ends_with(".tlz") {
+        tar::extract_tar_lzma(file, options)?;
+    } else if file_name_lower.ends_with(".tar.zst") || file_name_lower.ends_with(".tzst") {
+        tar::extract_tar_zst(file, options)?;
+    } else if file_name_lower.ends_with(".tar.lz4") {
+        tar::extract_tar_lz4(file, options)?;
+    } else if file_name_lower.ends_with(".tar.br") {
+        tar::extract_tar_br(file, options)?;
     } else if file_name_lower.ends_with(".zip") {
         zip_mod::extract_zip(file, options)?;
     } else if file_name_lower.ends_with(".7z") {
@@ -261,9 +272,23 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         rar::extract_rar(file_path, options)?;
     } else if file_name_lower.ends_with(".tar") {
         tar::extract_tar(file, options)?;
+    } else if file_name_lower.ends_with(".gz") {
+        stream::extract_stream(file, file_path, options, ".gz")?;
+    } else if file_name_lower.ends_with(".bz2") {
+        stream::extract_stream(file, file_path, options, ".bz2")?;
+    } else if file_name_lower.ends_with(".xz") {
+        stream::extract_stream(file, file_path, options, ".xz")?;
+    } else if file_name_lower.ends_with(".zst") {
+        stream::extract_stream(file, file_path, options, ".zst")?;
+    } else if file_name_lower.ends_with(".lz4") {
+        stream::extract_stream(file, file_path, options, ".lz4")?;
+    } else if file_name_lower.ends_with(".br") {
+        stream::extract_stream(file, file_path, options, ".br")?;
+    } else if file_name_lower.ends_with(".lzma") {
+        stream::extract_stream(file, file_path, options, ".lzma")?;
     } else {
         return Err(anyhow!(
-            "Unsupported archive format. Please use a known extension (.tar, .tar.gz, .tgz, .tar.xz, .tar.bz2, .zip, .7z, .rar)"
+            "Unsupported archive format. Please use a known extension (.tar, .tar.gz, .tgz, .tar.xz, .txz, .tar.bz2, .tbz2, .tbz, .tar.lzma, .tlz, .tar.zst, .tzst, .tar.lz4, .tar.br, .zip, .7z, .rar, .gz, .bz2, .xz, .zst, .lz4, .br, .lzma)"
         ));
     }
 

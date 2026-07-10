@@ -73,6 +73,93 @@ fn create_7z(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::
     path
 }
 
+#[derive(Copy, Clone)]
+enum Compression {
+    Gz,
+    Bz2,
+    Xz,
+    Lzma,
+    Zst,
+    Lz4,
+    Br,
+}
+
+fn compress_bytes(input: &[u8], kind: Compression) -> Vec<u8> {
+    match kind {
+        Compression::Gz => {
+            let mut enc = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+            enc.write_all(input).unwrap();
+            enc.finish().unwrap()
+        }
+        Compression::Bz2 => {
+            let mut enc = bzip2::write::BzEncoder::new(Vec::new(), bzip2::Compression::default());
+            enc.write_all(input).unwrap();
+            enc.finish().unwrap()
+        }
+        Compression::Xz => {
+            let mut enc = xz2::write::XzEncoder::new(Vec::new(), 6);
+            enc.write_all(input).unwrap();
+            enc.finish().unwrap()
+        }
+        Compression::Lzma => {
+            let mut out = Vec::new();
+            lzma_rs::lzma_compress(&mut std::io::Cursor::new(input), &mut out).unwrap();
+            out
+        }
+        Compression::Zst => {
+            let mut enc = zstd::stream::write::Encoder::new(Vec::new(), 3).unwrap();
+            enc.write_all(input).unwrap();
+            enc.finish().unwrap()
+        }
+        Compression::Lz4 => {
+            let mut enc = lz4_flex::frame::FrameEncoder::new(Vec::new());
+            enc.write_all(input).unwrap();
+            enc.finish().unwrap()
+        }
+        Compression::Br => {
+            let mut enc = brotli::CompressorWriter::new(Vec::new(), 4096, 11, 22);
+            enc.write_all(input).unwrap();
+            enc.flush().unwrap();
+            enc.into_inner()
+        }
+    }
+}
+
+fn create_tar_compressed(
+    dir: &std::path::Path,
+    name: &str,
+    files: &[(&str, &str)],
+    kind: Compression,
+) -> std::path::PathBuf {
+    let mut tar_buf = Vec::new();
+    {
+        let mut tar = tar::Builder::new(&mut tar_buf);
+        for (name, content) in files {
+            let mut header = tar::Header::new_gnu();
+            header.set_path(name).unwrap();
+            header.set_size(content.len() as u64);
+            header.set_mode(0o644);
+            header.set_cksum();
+            tar.append(&header, content.as_bytes()).unwrap();
+        }
+        tar.finish().unwrap();
+    }
+    let path = dir.join(name);
+    fs::write(&path, compress_bytes(&tar_buf, kind)).unwrap();
+    path
+}
+
+fn create_stream(
+    dir: &std::path::Path,
+    name: &str,
+    content: &[u8],
+    kind: Compression,
+) -> std::path::PathBuf {
+    let path = dir.join(name);
+    fs::write(&path, compress_bytes(content, kind)).unwrap();
+    path
+}
+
 #[test]
 fn extracts_tar_gz() {
     let tmp = TempDir::new().unwrap();
@@ -336,4 +423,214 @@ fn shows_help() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Extract"));
+}
+
+#[test]
+fn extracts_tar_lzma() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "test.tar.lzma",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+        Compression::Lzma,
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_tar_zst() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "test.tar.zst",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+        Compression::Zst,
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_tar_lz4() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "test.tar.lz4",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+        Compression::Lz4,
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_tar_br() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "test.tar.br",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+        Compression::Br,
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_gz_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_stream(tmp.path(), "test.txt.gz", b"Hello", Compression::Gz);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
+}
+
+#[test]
+fn extracts_bz2_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_stream(tmp.path(), "test.txt.bz2", b"Hello", Compression::Bz2);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
+}
+
+#[test]
+fn extracts_xz_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_stream(tmp.path(), "test.txt.xz", b"Hello", Compression::Xz);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
+}
+
+#[test]
+fn extracts_zst_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_stream(tmp.path(), "test.txt.zst", b"Hello", Compression::Zst);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
+}
+
+#[test]
+fn extracts_lz4_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_stream(tmp.path(), "test.txt.lz4", b"Hello", Compression::Lz4);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
+}
+
+#[test]
+fn extracts_br_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_stream(tmp.path(), "test.txt.br", b"Hello", Compression::Br);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
+}
+
+#[test]
+fn extracts_lzma_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_stream(tmp.path(), "test.txt.lzma", b"Hello", Compression::Lzma);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
 }

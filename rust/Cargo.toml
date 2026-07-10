@@ -22,6 +22,14 @@ zip = { version = "8", default-features = false, features = ["deflate", "aes-cry
 sevenz-rust2 = "0.20.2"
 # RAR archive support
 rars = "0.4"
+# TAR LZMA extension
+lzma-rs = "0.3"
+# TAR zstd / .zst stream
+ruzstd = "0.8"
+# TAR lz4 / .lz4 stream
+lz4_flex = "0.13"
+# TAR brotli / .br stream
+brotli-decompressor = "5"
 
 # Use anyhow for error handling (minimal overhead)
 anyhow = "1.0"
@@ -29,11 +37,16 @@ anyhow = "1.0"
 clap = { version = "4.6", features = ["cargo", "derive"] }
 # Progress bar for extraction
 indicatif = "0.17"
+# Temporary files for compression layers without Read wrappers
+tempfile = "3"
 
 [dev-dependencies]
 tempfile = "3"
 assert_cmd = "2"
 predicates = "3"
+# Test encoders for formats without Rust Write wrappers in [dependencies]
+zstd = "0.13"
+brotli = "7"
 
 [build-dependencies]
 clap = { version = "4.6", features = ["derive"] }

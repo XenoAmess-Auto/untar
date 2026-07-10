@@ -1,11 +1,13 @@
 use std::fs::{self, File};
-use std::io::{self, BufReader, Read};
+use std::io::{self, BufReader, Read, Seek};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
 use anyhow::{Context, Result};
+use brotli_decompressor::Decompressor;
 use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
+use lz4_flex::frame::FrameDecoder;
 use tar::Archive;
 use xz2::read::XzDecoder;
 
@@ -24,6 +26,26 @@ pub fn extract_tar_xz<R: Read>(reader: R, options: &ExtractOptions) -> Result<()
 
 pub fn extract_tar_bz2<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
     extract_tar_reader(BzDecoder::new(reader), options)
+}
+
+pub fn extract_tar_lzma<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
+    let mut temp = tempfile::NamedTempFile::new()?;
+    lzma_rs::lzma_decompress(&mut BufReader::new(reader), temp.as_file_mut())?;
+    let file = temp.as_file_mut();
+    file.rewind()?;
+    extract_tar_reader(file, options)
+}
+
+pub fn extract_tar_zst<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
+    extract_tar_reader(ruzstd::decoding::StreamingDecoder::new(reader)?, options)
+}
+
+pub fn extract_tar_lz4<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
+    extract_tar_reader(FrameDecoder::new(reader), options)
+}
+
+pub fn extract_tar_br<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
+    extract_tar_reader(Decompressor::new(reader, 4096), options)
 }
 
 pub fn extract_tar<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
