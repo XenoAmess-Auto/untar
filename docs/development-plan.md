@@ -34,11 +34,10 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 ### 1.4 Testing
 - [x] Add `assert_cmd` + `predicates` integration tests.
 - [x] Cover: successful extraction, overwrite behavior, listing, strip-components, and unsupported formats.
-
 ### 1.5 MSRV
-- [x] Add `rust-version = "1.78"` to `Cargo.toml`.
-- [x] Add an MSRV check job in CI using Rust 1.78.
-- [x] Update branch protection to require the `MSRV` check.
+
+**Deferred**: this is a binary CLI tool distributed primarily via pre-built binaries. Requiring a specific MSRV adds maintenance overhead (dependencies like `clap` already move to `edition2024`/Rust 1.85+) with limited practical benefit for end users. The project builds with the latest stable Rust; MSRV can be revisited later if downstream distro packaging requires it.
+
 
 ---
 
