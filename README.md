@@ -7,7 +7,7 @@
 
 English | [中文版](README_CN.md)
 
-A lightweight, fast command-line tool for extracting archives with support for a wide range of formats.
+A lightweight, fast command-line tool for extracting archives with support for a wide range of formats, including password-protected archives.
 
 ## Features
 
@@ -133,9 +133,9 @@ untar --help
 | LZ4-compressed Tar | `.tar.lz4` | LZ4-compressed tar archive |
 | Brotli-compressed Tar | `.tar.br` | Brotli-compressed tar archive |
 | LZO-compressed Tar | `.tar.lzo` | LZO/lzop-compressed tar archive |
-| Zip | `.zip` | ZIP archive (including AES password-protected) |
+| ZIP | `.zip`, `.apk`, `.jar`, `.war`, `.ear` | ZIP archive (including AES password-protected) |
 | 7-Zip | `.7z` | 7z archive (including password-protected) |
-| RAR | `.rar` | RAR archive |
+| RAR | `.rar` | RAR archive (decode-only) |
 | Cabinet | `.cab` | Windows Cabinet archive |
 | Unix Archive | `.ar`, `.a` | Unix `ar` archive (common/static libraries) |
 | CPIO | `.cpio` | CPIO newc (SVR4) archive |
@@ -146,6 +146,11 @@ untar --help
 | SquashFS | `.squashfs`, `.sqfs`, `.sfs`, `.snap` | SquashFS filesystem image |
 | RPM package | `.rpm` | RPM package (Red Hat/Fedora/openSUSE) |
 | POSIX pax | `.pax` | POSIX pax archive (handled as tar) |
+| LZIP | `.tar.lz`, `.tlz` | LZIP-compressed tar archive |
+| Unix compress | `.tar.Z`, `.taz` | Unix compress (LZW) compressed tar archive |
+| ACE | `.ace` | ACE archive (decode-only) |
+| ARC/PAK | `.arc`, `.pak` | ARC/PAK archive (decode-only) |
+| ZOO | `.zoo` | ZOO archive (decode-only) |
 | Gzip stream | `.gz` | Single gzip-compressed file |
 | BZip2 stream | `.bz2` | Single bzip2-compressed file |
 | XZ stream | `.xz` | Single XZ-compressed file |
@@ -155,9 +160,7 @@ untar --help
 | LZMA stream | `.lzma` | Single LZMA-compressed file (extension only) |
 | LZO stream | `.lzo` | Single LZO/lzop-compressed file |
 
-Note: `.tar.lz` (LZIP), `.tar.Z` (Unix compress), `.ace`, `.arc`, and `.zoo` are not supported due to the lack of viable pure-Rust implementations.
-
-`untar` will automatically detect the actual format from the file's magic number if the extension is missing or incorrect. You can also force a format with `--format <FORMAT>`.
+`untar` will automatically detect the actual format from the file's magic number if the extension is missing or incorrect. You can also force a format with `--format <FORMAT>`. See `--help` for the full list of accepted format names.
 
 ### Command Line Options
 
@@ -172,6 +175,7 @@ Options:
   -d, --directory <DIR>       Output directory
   -q, --quiet                  Quiet mode (suppress output)
   -l, --list                   List archive contents instead of extracting
+  -p, --password <PASSWORD>  Password for encrypted archives
       --on-exists <POLICY>    How to handle existing files [default: ask]
                                (ask, error, overwrite, skip, rename)
       --rename-suffix <SUFFIX>  Suffix used when renaming existing files [default: .1]
@@ -263,6 +267,7 @@ untar/
 - [liblzma](https://crates.io/crates/liblzma) 0.4 - XZ compression support
 - [bzip2](https://crates.io/crates/bzip2) 0.6 - BZip2 compression support
 - [lzma-rs](https://crates.io/crates/lzma-rs) 0.3 - LZMA decompression
+- [lzma-rust2](https://crates.io/crates/lzma-rust2) 0.16 - LZIP decompression
 - [ruzstd](https://crates.io/crates/ruzstd) 0.8 - Zstandard decompression
 - [lz4_flex](https://crates.io/crates/lz4_flex) 0.13 - LZ4 decompression
 - [brotli-decompressor](https://crates.io/crates/brotli-decompressor) 5 - Brotli decompression
@@ -275,6 +280,10 @@ untar/
 - [iso9660-rs](https://crates.io/crates/iso9660-rs) 1.0 - ISO 9660 image support
 - [xara](https://crates.io/crates/xara) 0.3 - XAR archive support
 - [delharc](https://crates.io/crates/delharc) 0.6 - LHA/LZH archive support
+- [backhand](https://crates.io/crates/backhand) 0.25 - SquashFS image support
+- [rpm](https://crates.io/crates/rpm) 0.25 - RPM package support
+- [unarc-rs](https://crates.io/crates/unarc-rs) 0.6 - Legacy formats (ACE, ARC, ZOO, Unix compress)
+- [lzo](https://crates.io/crates/lzo) 0.1 - LZO/lzop decompression
 - [clap](https://crates.io/crates/clap) 4.6 - Command-line argument parsing
 - [anyhow](https://crates.io/crates/anyhow) 1.0 - Error handling
 - [indicatif](https://crates.io/crates/indicatif) 0.17 - Progress display

@@ -17,7 +17,14 @@ pub enum OnExists {
     Rename,
 }
 
-/// Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages.
+/// Extract a wide variety of archive and compression formats.
+///
+/// Supported archive formats include tar, tar.gz, tgz, tar.xz, txz, tar.bz2,
+/// tbz2, tbz, tar.lzma, tlz, tar.lz, tar.zst, tzst, tar.lz4, tar.br, tar.lzo,
+/// tar.Z, taz, zip, apk, jar, war, ear, 7z, rar, cab, ar, a, cpio, iso, xar,
+/// lha, lzh, deb, squashfs, sqfs, sfs, snap, rpm, ace, arc, zoo, and pax.
+/// Single-stream formats include gz, bz2, xz, zst, lz4, br, lzma, lzo, lz,
+/// and Z.
 #[derive(Parser, Debug, Clone)]
 #[command(name = "untar", author, version, about, long_about = None)]
 pub struct Args {
@@ -51,6 +58,12 @@ pub struct Args {
 
     /// Force a specific archive format instead of auto-detecting from the file
     /// extension or contents.
+    ///
+    /// Accepted values: tar.gz, tgz, tar.xz, txz, tar.bz2, tbz2, tbz, tar.lzma,
+    /// tlz, tar.lz, tar.zst, tzst, tar.lz4, tar.br, tar, zip, apk, jar, war,
+    /// ear, 7z, rar, cab, ar, a, cpio, iso, xar, lha, lzh, deb, squashfs,
+    /// sqfs, sfs, snap, rpm, tar.lzo, tar.z, taz, z, ace, arc, zoo, pax,
+    /// gz, bz2, xz, zst, lz4, br, lzma, lzo, lz.
     #[arg(long = "format", value_name = "FORMAT")]
     pub format: Option<String>,
 

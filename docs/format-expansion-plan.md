@@ -7,9 +7,11 @@ This document describes the plan to extend `untar` to support additional archive
 Add support for all common formats that have a viable Rust crate, excluding those already identified as impractical or legacy-only.
 
 Explicitly excluded:
-- `.tar.lz` (LZIP): no mature pure-Rust implementation
-- `.tar.Z` (Unix compress): no active Rust crate
-- `.ace`, `.arc`, `.zoo`: no active Rust crates
+- `.tar.lz` (LZIP): no mature pure-Rust implementation (now supported via `lzma-rust2`)
+- `.tar.Z` (Unix compress): no active Rust crate (now supported via `unarc-rs`)
+- `.ace`, `.arc`, `.zoo`: no active Rust crates (now supported via `unarc-rs`)
+
+All previously excluded legacy formats are now implemented.
 
 ## Phase A: TAR compression extensions and single-stream decompression
 

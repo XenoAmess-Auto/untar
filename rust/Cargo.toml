@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["xenoamess"]
 license = "Apache-2.0"
 repository = "https://github.com/XenoAmess-Auto/untar"
-description = "Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages"
+description = "A fast command-line tool for extracting archives and compressed files"
 
 [dependencies]
 # Minimal tar extraction with support for compressed archives

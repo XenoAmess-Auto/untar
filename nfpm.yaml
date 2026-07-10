@@ -6,7 +6,7 @@ release: 1
 section: utils
 priority: optional
 maintainer: XenoAmess-bot <xenoamess.bot@gmail.com>
-description: Fast command-line tool for extracting tar archives
+description: Fast command-line tool for extracting archives and compressed files in many formats
 homepage: https://github.com/XenoAmess-Auto/untar
 license: Apache-2.0
 contents:

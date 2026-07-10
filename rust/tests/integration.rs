@@ -24,6 +24,24 @@ fn create_tar_gz(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> s
     path
 }
 
+fn create_tar(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut tar = tar::Builder::new(file);
+
+    for (name, content) in files {
+        let mut header = tar::Header::new_gnu();
+        header.set_path(name).unwrap();
+        header.set_size(content.len() as u64);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append(&header, content.as_bytes()).unwrap();
+    }
+
+    tar.finish().unwrap();
+    path
+}
+
 fn create_zip(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
     let path = dir.join(name);
     let file = File::create(&path).unwrap();
@@ -302,6 +320,76 @@ fn create_iso(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std:
         .status()
         .expect("xorriso failed to create ISO");
     path
+}
+
+#[test]
+fn extracts_tar() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar(
+        tmp.path(),
+        "test.tar",
+        &[("hello.txt", "Hello, world!"), ("dir/nested.txt", "Nested")],
+    );
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(
+        fs::read_to_string(output.join("hello.txt")).unwrap(),
+        "Hello, world!"
+    );
+    assert_eq!(
+        fs::read_to_string(output.join("dir/nested.txt")).unwrap(),
+        "Nested"
+    );
+}
+
+#[test]
+fn extracts_tar_xz() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "test.tar.xz",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+        Compression::Xz,
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_tar_bz2() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "test.tar.bz2",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+        Compression::Bz2,
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
 
 #[test]
@@ -601,7 +689,7 @@ fn shows_help() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Extract"));
+        .stdout(predicate::str::contains("A fast command-line tool"));
 }
 
 #[test]

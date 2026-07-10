@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-untar 是一个linux命令， 用来解压tar包/tar.gz包/tgz包/tar.xz包/tar.bz2包/tar.zip包。
+untar 是一个跨平台的命令行解压工具，支持 tar、gzip、xz、bzip2、zip、7z、rar、lha、lzh、iso、xar、cab、cpio、ar、squashfs、rpm、legacy 格式（ACE/ARC/ZOO/Unix compress）以及单文件压缩流（gz/bz2/xz/zst/lz4/br/lzma/lzo/lz）等。
 
 使用方式为
 

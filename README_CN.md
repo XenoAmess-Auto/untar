@@ -7,7 +7,7 @@
 
 [English](README.md) | 中文版
 
-一个轻量级、快速的命令行工具，用于解压 tar 归档文件，支持多种压缩格式。
+一个轻量级、快速的命令行工具，用于解压多种归档文件和压缩流，支持多种格式。
 
 ## 功能特性
 
@@ -145,10 +145,12 @@ Options:
   -d, --directory <DIR>       解压文件到指定目录（默认：当前目录）
   -q, --quiet                  静默模式（不显示进度）
   -l, --list                   列出归档内容，不解压
+  -p, --password <PASSWORD>    加密归档的密码
       --on-exists <POLICY>    已存在文件的处理方式 [默认：ask]
                                （ask, error, overwrite, skip, rename）
       --rename-suffix <SUFFIX>  重命名已存在文件时使用的后缀 [默认：.1]
       --strip-components <N>   去掉前 N 层路径
+      --format <FORMAT>        强制指定格式（不自动检测）
   -h, --help                   显示帮助
   -V, --version                显示版本
 ```
@@ -219,9 +221,27 @@ untar/
 - [flate2](https://crates.io/crates/flate2) 1.1 - GZip 压缩支持
 - [liblzma](https://crates.io/crates/liblzma) 0.4 - XZ 压缩支持
 - [bzip2](https://crates.io/crates/bzip2) 0.6 - BZip2 压缩支持
-- [zip](https://crates.io/crates/zip) 7 - ZIP 归档支持
+- [lzma-rs](https://crates.io/crates/lzma-rs) 0.3 - LZMA 解压
+- [lzma-rust2](https://crates.io/crates/lzma-rust2) 0.16 - LZIP 解压
+- [ruzstd](https://crates.io/crates/ruzstd) 0.8 - Zstandard 解压
+- [lz4_flex](https://crates.io/crates/lz4_flex) 0.13 - LZ4 解压
+- [brotli-decompressor](https://crates.io/crates/brotli-decompressor) 5 - Brotli 解压
+- [zip](https://crates.io/crates/zip) 8 - ZIP 归档支持
+- [sevenz-rust2](https://crates.io/crates/sevenz-rust2) 0.20 - 7z 归档支持
+- [rars](https://crates.io/crates/rars) 0.4 - RAR 归档支持
+- [cab](https://crates.io/crates/cab) 0.6 - Windows Cabinet 支持
+- [ar](https://crates.io/crates/ar) 0.9 - Unix 归档支持
+- [cpio](https://crates.io/crates/cpio) 0.4 - CPIO 归档支持
+- [iso9660-rs](https://crates.io/crates/iso9660-rs) 1.0 - ISO 9660 镜像支持
+- [xara](https://crates.io/crates/xara) 0.3 - XAR 归档支持
+- [delharc](https://crates.io/crates/delharc) 0.6 - LHA/LZH 归档支持
+- [backhand](https://crates.io/crates/backhand) 0.25 - SquashFS 镜像支持
+- [rpm](https://crates.io/crates/rpm) 0.25 - RPM 软件包支持
+- [unarc-rs](https://crates.io/crates/unarc-rs) 0.6 - 传统格式（ACE、ARC、ZOO、Unix compress）
+- [lzo](https://crates.io/crates/lzo) 0.1 - LZO/lzop 解压
 - [clap](https://crates.io/crates/clap) 4.5 - 命令行参数解析
 - [anyhow](https://crates.io/crates/anyhow) 1.0 - 错误处理
+- [indicatif](https://crates.io/crates/indicatif) 0.17 - 进度显示
 
 ## 许可证
 
