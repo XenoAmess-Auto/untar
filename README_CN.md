@@ -113,15 +113,16 @@ untar --help
 ### 命令行选项
 
 ```
-Usage: untar [OPTIONS] FILE
-
-Options:
-  -d, --directory DIR    解压文件到指定目录（默认：当前目录）
-  -q, --quiet            静默模式（不显示进度）
-  -h, --help             显示帮助
+Usage: untar [OPTIONS] [FILE]
 
 Arguments:
-  FILE                   要解压的归档文件
+  [FILE]  要解压的归档文件
+
+Options:
+  -d, --directory <DIR>  解压文件到指定目录（默认：当前目录）
+  -q, --quiet            静默模式（不显示进度）
+  -h, --help             显示帮助
+  -V, --version          显示版本
 ```
 
 ### 示例
@@ -165,12 +166,21 @@ cargo test
 untar/
 ├── rust/                    # Rust 实现
 │   ├── Cargo.toml
-│   └── src/
-│       └── main.rs
+│   ├── src/
+│   │   ├── main.rs          # CLI 入口
+│   │   ├── cli.rs           # 参数解析
+│   │   ├── extract.rs       # 解压编排与路径安全
+│   │   └── archive/         # 归档格式实现
+│   │       ├── mod.rs
+│   │       ├── tar.rs
+│   │       └── zip.rs
+│   └── tests/
+│       └── integration.rs   # 端到端 CLI 测试
 ├── .github/
 │   ├── workflows/           # CI/CD 工作流
 │   │   ├── ci.yml           # 构建和测试
-│   │   └── release.yml      # 多平台 Release 构建
+│   │   ├── release.yml      # 多平台 Release 构建
+│   │   └── auto-merge.yml   # Dependabot 自动合并
 │   └── dependabot.yml       # 自动依赖更新
 └── LICENSE、README.md       # 文档
 ```

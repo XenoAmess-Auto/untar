@@ -22,7 +22,7 @@ A lightweight, fast command-line tool for extracting tar archives with support f
 
 ### Pre-built Binaries
 
-Download pre-built binaries from the [Releases](https://github.com/XenoAmess-Auto/untar/releases) page.
+Pre-built binaries from the [Releases](https://github.com/XenoAmess-Auto/untar/releases) page.
 
 Available builds:
 - `untar-x86_64-linux-musl.tar.gz` - Linux x86_64 (static musl)
@@ -113,15 +113,16 @@ untar --help
 ### Command Line Options
 
 ```
-Usage: untar [OPTIONS] FILE
-
-Options:
-  -d, --directory DIR    Extract files into DIR (default: current directory)
-  -q, --quiet            Suppress output (no progress display)
-  -h, --help             Show help
+Usage: untar [OPTIONS] [FILE]
 
 Arguments:
-  FILE                   Archive file to extract
+  [FILE]  Archive file to extract
+
+Options:
+  -d, --directory <DIR>  Output directory
+  -q, --quiet            Quiet mode (suppress output)
+  -h, --help             Print help
+  -V, --version          Print version
 ```
 
 ### Examples
@@ -165,12 +166,21 @@ cargo test
 untar/
 ├── rust/                    # Rust implementation
 │   ├── Cargo.toml
-│   └── src/
-│       └── main.rs
+│   ├── src/
+│   │   ├── main.rs          # CLI entry point
+│   │   ├── cli.rs           # Argument parsing
+│   │   ├── extract.rs       # Extraction orchestration & path safety
+│   │   └── archive/         # Archive format implementations
+│   │       ├── mod.rs
+│   │       ├── tar.rs
+│   │       └── zip.rs
+│   └── tests/
+│       └── integration.rs   # End-to-end CLI tests
 ├── .github/
 │   ├── workflows/           # CI/CD workflows
 │   │   ├── ci.yml           # Build and test
-│   │   └── release.yml      # Release builds (multi-platform)
+│   │   ├── release.yml      # Release builds (multi-platform)
+│   │   └── auto-merge.yml   # Dependabot auto-merge
 │   └── dependabot.yml       # Automated dependency updates
 └── LICENSE, README.md       # Documentation
 ```
