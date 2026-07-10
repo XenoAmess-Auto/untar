@@ -17,7 +17,7 @@ jobs:
       run:
         working-directory: ./rust
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -32,7 +32,7 @@ jobs:
       run:
         working-directory: ./rust
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -46,7 +46,7 @@ jobs:
       run:
         working-directory: ./rust
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -70,7 +70,7 @@ jobs:
       run:
         working-directory: ./rust
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -90,7 +90,7 @@ jobs:
         run: cargo tarpaulin --out Xml --out Html
       - name: Upload coverage to Codecov (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@v4
         with:
           files: ./rust/cobertura.xml
           flags: rust
@@ -98,7 +98,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload coverage report as artifact (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: rust-coverage-report
           path: rust/tarpaulin-report.html
