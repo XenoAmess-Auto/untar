@@ -117,6 +117,37 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 
 ---
 
+## Phase 6: Format Expansion
+
+**Plan document**: `docs/format-expansion-plan.md`
+
+Extend `untar` to support additional archive and compression formats beyond the current set (tar, tar.gz, tgz, tar.xz, tar.bz2, zip, 7z, rar).
+
+### 6.1 TAR Compression Extensions
+- `.tar.lzma` via `lzma-rs`
+- `.tar.zst` / `.tzst` via `ruzstd`
+- `.tar.lz4` via `lz4_flex`
+- `.tar.br` via `brotli-decompressor`
+
+### 6.2 Single-Stream Decompression
+- `.gz`, `.bz2`, `.xz`, `.zst`, `.lz4`, `.br`, `.lzma`
+
+### 6.3 Independent Archive Formats
+- `.cab` via `cab`
+- `.ar` via `ar`
+- `.cpio` via `cpio`
+- `.iso` via `iso9660-rs`
+- `.xar` via `xara`
+- `.lha` / `.lzh` via `delharc`
+
+### 6.4 Tests and Documentation
+- Add integration tests for every new format.
+- Add RAR and password-7z tests.
+- Update README with supported formats table.
+- Create `docs/supported-formats.md`.
+
+---
+
 ## Execution Order
 
 Recommended order: **Phase 1 → Phase 2 → Phase 4 → Phase 3 → Phase 5**.
