@@ -721,11 +721,13 @@ fn assert_extracts_fixture(
         .arg(archive)
         .assert()
         .success();
-    let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs").unwrap();
-    assert_eq!(
-        fs::read_to_string(output.join(expected_file)).unwrap(),
-        expected
-    );
+    let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs")
+        .unwrap()
+        .replace("\r\n", "\n");
+    let actual = fs::read_to_string(output.join(expected_file))
+        .unwrap()
+        .replace("\r\n", "\n");
+    assert_eq!(actual, expected);
 }
 
 #[test]
