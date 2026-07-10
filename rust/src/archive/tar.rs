@@ -16,7 +16,8 @@ use crate::archive::lzo;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, validate_symlink_target, EntryInfo, ExtractOptions, LimitedWriter,
+    Progress,
 };
 
 pub fn extract_tar_gz<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
@@ -85,8 +86,15 @@ fn extract_tar_reader<R: Read>(reader: R, options: &ExtractOptions) -> Result<()
         }
 
         let size = entry.size();
-        let is_dir = entry.header().entry_type() == tar::EntryType::Directory;
+        let entry_type = entry.header().entry_type();
+        let is_dir = entry_type == tar::EntryType::Directory;
+        let is_symlink = entry_type == tar::EntryType::Symlink;
+        let is_hardlink = entry_type == tar::EntryType::Link;
         let mode = entry.header().mode().ok().filter(|m| *m != 0);
+
+        if !options.list {
+            options.limits.record_entry(size)?;
+        }
 
         if options.list {
             print_entry(&EntryInfo {
@@ -100,6 +108,33 @@ fn extract_tar_reader<R: Read>(reader: R, options: &ExtractOptions) -> Result<()
 
         let entry_path = safe_output_path(&options.output_dir, &path)
             .with_context(|| format!("Unsafe entry path: {}", path.display()))?;
+
+        if is_hardlink {
+            return Err(anyhow::anyhow!(
+                "Hard links are not supported: {}",
+                path.display()
+            ));
+        }
+
+        if is_symlink {
+            let target = entry.link_name()?.unwrap_or_default().to_path_buf();
+            let parent = entry_path.parent().unwrap_or(&options.output_dir);
+            validate_symlink_target(&options.output_dir, parent, &target)?;
+            if let Some(parent) = entry_path.parent() {
+                if !parent.exists() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+            #[cfg(unix)]
+            {
+                std::os::unix::fs::symlink(&target, &entry_path)?;
+            }
+            #[cfg(not(unix))]
+            {
+                let _ = target;
+            }
+            continue;
+        }
 
         if is_dir {
             if let Some(parent) = entry_path.parent() {
@@ -137,8 +172,9 @@ fn extract_tar_reader<R: Read>(reader: R, options: &ExtractOptions) -> Result<()
             ));
         }
 
-        let mut file = File::create(&target_path)?;
-        io::copy(&mut entry, &mut file)?;
+        let file = File::create(&target_path)?;
+        let mut limited = LimitedWriter::new(file, options.limits.clone());
+        io::copy(&mut entry, &mut limited)?;
         extracted_count += 1;
         if let Some(ref pb) = progress {
             pb.inc(1);

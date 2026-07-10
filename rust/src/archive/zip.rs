@@ -7,7 +7,7 @@ use zip::ZipArchive;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result<()> {
@@ -42,6 +42,12 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
 
         let is_dir = entry.is_dir();
         let mode = None; // zip does not expose Unix mode easily without extra features
+
+        if !options.list {
+            options.limits.record_entry(size)?;
+            let compressed = entry.compressed_size();
+            options.limits.check_ratio(compressed, size)?;
+        }
 
         if options.list {
             print_entry(&EntryInfo {
@@ -95,8 +101,9 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
             pb.set_message(format!("[{}] {} ({})", i + 1, name, format_size(size)));
         }
 
-        let mut file = File::create(&target_path)?;
-        io::copy(&mut entry, &mut file)?;
+        let file = File::create(&target_path)?;
+        let mut limited = LimitedWriter::new(file, options.limits.clone());
+        io::copy(&mut entry, &mut limited)?;
         extracted_count += 1;
         if let Some(ref pb) = progress {
             pb.inc(1);

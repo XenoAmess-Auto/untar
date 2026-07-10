@@ -142,17 +142,23 @@ Arguments:
   [PATTERNS]   仅解压路径以这些模式开头的条目
 
 Options:
-  -d, --directory <DIR>       解压文件到指定目录（默认：当前目录）
-  -q, --quiet                  静默模式（不显示进度）
-  -l, --list                   列出归档内容，不解压
-  -p, --password <PASSWORD>    加密归档的密码
+  -d, --directory <DIR>        解压文件到指定目录（默认：当前目录）
+  -q, --quiet                 静默模式（不显示进度）
+  -l, --list                  列出归档内容，不解压
+  -p, --password <PASSWORD>   加密归档的密码
       --on-exists <POLICY>    已存在文件的处理方式 [默认：ask]
                                （ask, error, overwrite, skip, rename）
       --rename-suffix <SUFFIX>  重命名已存在文件时使用的后缀 [默认：.1]
       --strip-components <N>   去掉前 N 层路径
       --format <FORMAT>        强制指定格式（不自动检测）
-  -h, --help                   显示帮助
-  -V, --version                显示版本
+      --max-total-size <SIZE>   最大总解压字节数 [默认：10GB]
+      --max-entry-size <SIZE>   单个文件最大字节数 [默认：1GB]
+      --max-entry-count <N>     最大解压条目数 [默认：10000]
+      --max-compression-ratio <N>  最大允许压缩比 [默认：100]
+      --max-recursion-depth <N>    最大嵌套归档深度 [默认：3]
+      --allow-unsafe             跳过安全警告并继续解压
+  -h, --help                    显示帮助
+  -V, --version                 显示版本
 ```
 
 ### 示例

@@ -12,7 +12,7 @@ use iso9660::mount;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 fn iso_error(e: iso9660::Iso9660Error) -> anyhow::Error {
@@ -68,6 +68,10 @@ pub fn extract_iso(file_path: &Path, options: &ExtractOptions) -> Result<()> {
             let size = entry.size;
             let is_dir = entry.flags.directory;
 
+            if !options.list {
+                options.limits.record_entry(size)?;
+            }
+
             if options.list {
                 print_entry(&EntryInfo {
                     path: path.clone(),
@@ -110,7 +114,8 @@ pub fn extract_iso(file_path: &Path, options: &ExtractOptions) -> Result<()> {
                 }
 
                 let mut reader = FileReader::new(&mut block_io, entry.clone());
-                let mut target_file = File::create(&target_path)?;
+                let target_file = File::create(&target_path)?;
+                let mut limited = LimitedWriter::new(target_file, options.limits.clone());
 
                 let mut buf = [0u8; 8192];
                 loop {
@@ -118,7 +123,7 @@ pub fn extract_iso(file_path: &Path, options: &ExtractOptions) -> Result<()> {
                     if n == 0 {
                         break;
                     }
-                    target_file.write_all(&buf[..n])?;
+                    limited.write_all(&buf[..n])?;
                 }
 
                 extracted_count += 1;

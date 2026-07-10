@@ -7,7 +7,8 @@ use backhand::{FilesystemReader, InnerNode};
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, validate_symlink_target, EntryInfo, ExtractOptions, LimitedWriter,
+    Progress,
 };
 
 pub fn extract_squashfs(file_path: &Path, options: &ExtractOptions) -> Result<()> {
@@ -44,6 +45,10 @@ pub fn extract_squashfs(file_path: &Path, options: &ExtractOptions) -> Result<()
             _ => continue,
         };
 
+        if !options.list {
+            options.limits.record_entry(size)?;
+        }
+
         if options.list {
             print_entry(&EntryInfo {
                 path: path.clone(),
@@ -73,6 +78,9 @@ pub fn extract_squashfs(file_path: &Path, options: &ExtractOptions) -> Result<()
         if let InnerNode::Symlink(symlink) = &node.inner {
             #[cfg(unix)]
             {
+                let target = Path::new(&symlink.link);
+                let parent = target_path.parent().unwrap_or(&options.output_dir);
+                validate_symlink_target(&options.output_dir, parent, target)?;
                 if let Some(parent) = target_path.parent() {
                     if !parent.exists() {
                         fs::create_dir_all(parent)?;
@@ -103,11 +111,12 @@ pub fn extract_squashfs(file_path: &Path, options: &ExtractOptions) -> Result<()
             ));
         }
 
-        let mut target_file = File::create(&target_path)?;
+        let target_file = File::create(&target_path)?;
         match &node.inner {
             InnerNode::File(file) => {
                 let mut reader = fs.file(file).reader();
-                io::copy(&mut reader, &mut target_file)?;
+                let mut limited = LimitedWriter::new(target_file, options.limits.clone());
+                io::copy(&mut reader, &mut limited)?;
             }
             _ => unreachable!(),
         }

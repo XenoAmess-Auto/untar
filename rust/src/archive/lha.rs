@@ -7,7 +7,7 @@ use delharc::parse_file;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_lha(file_path: &Path, options: &ExtractOptions) -> Result<()> {
@@ -23,6 +23,10 @@ pub fn extract_lha(file_path: &Path, options: &ExtractOptions) -> Result<()> {
         let is_dir = header.is_directory();
         let size = header.original_size;
         entry_count += 1;
+
+        if !options.list {
+            options.limits.record_entry(size)?;
+        }
 
         let path = match strip_path_components(&path, options.strip_components) {
             Some(p) => p,
@@ -100,8 +104,9 @@ pub fn extract_lha(file_path: &Path, options: &ExtractOptions) -> Result<()> {
             ));
         }
 
-        let mut target_file = File::create(&target_path)?;
-        io::copy(&mut reader, &mut target_file)?;
+        let target_file = File::create(&target_path)?;
+        let mut limited = LimitedWriter::new(target_file, options.limits.clone());
+        io::copy(&mut reader, &mut limited)?;
         extracted_count += 1;
         if let Some(ref pb) = progress {
             pb.inc(1);

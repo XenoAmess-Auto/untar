@@ -172,17 +172,23 @@ Arguments:
   [PATTERNS]   Only extract entries whose path starts with one of these patterns
 
 Options:
-  -d, --directory <DIR>       Output directory
-  -q, --quiet                  Quiet mode (suppress output)
-  -l, --list                   List archive contents instead of extracting
-  -p, --password <PASSWORD>  Password for encrypted archives
+  -d, --directory <DIR>        Output directory
+  -q, --quiet                 Quiet mode (suppress output)
+  -l, --list                  List archive contents instead of extracting
+  -p, --password <PASSWORD>   Password for encrypted archives
       --on-exists <POLICY>    How to handle existing files [default: ask]
                                (ask, error, overwrite, skip, rename)
       --rename-suffix <SUFFIX>  Suffix used when renaming existing files [default: .1]
       --strip-components <N>   Strip the first N leading path components
       --format <FORMAT>        Force a format instead of auto-detecting
-  -h, --help                   Print help
-  -V, --version                Print version
+      --max-total-size <SIZE>   Maximum total bytes to extract [default: 10GB]
+      --max-entry-size <SIZE>   Maximum bytes per extracted file [default: 1GB]
+      --max-entry-count <N>     Maximum number of entries to extract [default: 10000]
+      --max-compression-ratio <N>  Maximum compression ratio allowed [default: 100]
+      --max-recursion-depth <N>    Maximum nested-archive depth [default: 3]
+      --allow-unsafe             Skip security warnings and continue extraction
+  -h, --help                    Print help
+  -V, --version                 Print version
 ```
 
 ### Examples

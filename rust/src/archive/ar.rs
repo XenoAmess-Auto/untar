@@ -7,7 +7,7 @@ use ar::Archive;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_ar(file_path: &Path, options: &ExtractOptions) -> Result<()> {
@@ -37,6 +37,10 @@ pub fn extract_ar(file_path: &Path, options: &ExtractOptions) -> Result<()> {
 
         let size = entry.header().size();
         let mode = entry.header().mode() & 0o7777;
+
+        if !options.list {
+            options.limits.record_entry(size)?;
+        }
 
         if options.list {
             print_entry(&EntryInfo {
@@ -74,8 +78,9 @@ pub fn extract_ar(file_path: &Path, options: &ExtractOptions) -> Result<()> {
             ));
         }
 
-        let mut file = File::create(&target_path)?;
-        io::copy(&mut entry, &mut file)?;
+        let file = File::create(&target_path)?;
+        let mut limited = LimitedWriter::new(file, options.limits.clone());
+        io::copy(&mut entry, &mut limited)?;
         extracted_count += 1;
         if let Some(ref pb) = progress {
             pb.inc(1);

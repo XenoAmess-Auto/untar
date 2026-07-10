@@ -6,7 +6,7 @@ use xara::{XarArchive, XarFileType};
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_xar(file_path: &Path, options: &ExtractOptions) -> Result<()> {
@@ -35,6 +35,10 @@ pub fn extract_xar(file_path: &Path, options: &ExtractOptions) -> Result<()> {
 
         let size = file.data.as_ref().map(|d| d.size).unwrap_or(0);
         let is_dir = file.file_type == XarFileType::Directory;
+
+        if !options.list {
+            options.limits.record_entry(size)?;
+        }
 
         if options.list {
             print_entry(&EntryInfo {
@@ -77,9 +81,10 @@ pub fn extract_xar(file_path: &Path, options: &ExtractOptions) -> Result<()> {
                 ));
             }
 
-            let mut target_file = File::create(&target_path)?;
+            let target_file = File::create(&target_path)?;
+            let mut limited = LimitedWriter::new(target_file, options.limits.clone());
             archive
-                .read_file_to(&file, &mut target_file)
+                .read_file_to(&file, &mut limited)
                 .with_context(|| format!("Failed to read XAR entry: {}", path.display()))?;
             extracted_count += 1;
             if let Some(ref pb) = progress {

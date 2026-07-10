@@ -67,6 +67,30 @@ pub struct Args {
     #[arg(long = "format", value_name = "FORMAT")]
     pub format: Option<String>,
 
+    /// Maximum total bytes written for the entire extraction.
+    #[arg(long, value_name = "SIZE", default_value = "10GB", value_parser = parse_size)]
+    pub max_total_size: u64,
+
+    /// Maximum bytes for a single output file.
+    #[arg(long, value_name = "SIZE", default_value = "1GB", value_parser = parse_size)]
+    pub max_entry_size: u64,
+
+    /// Maximum number of entries extracted.
+    #[arg(long, value_name = "N", default_value = "10000")]
+    pub max_entry_count: u64,
+
+    /// Maximum allowed uncompressed-to-compressed size ratio.
+    #[arg(long, value_name = "N", default_value = "100")]
+    pub max_compression_ratio: u64,
+
+    /// Maximum nested-archive depth.
+    #[arg(long, value_name = "N", default_value = "3")]
+    pub max_recursion_depth: u32,
+
+    /// Skip security warnings and continue extraction even when limits are exceeded.
+    #[arg(long)]
+    pub allow_unsafe: bool,
+
     /// Archive file to extract.
     #[arg(value_name = "FILE", index = 1)]
     pub file: Option<String>,
@@ -74,6 +98,33 @@ pub struct Args {
     /// Patterns of files/paths to extract.
     #[arg(value_name = "PATTERNS", index = 2, num_args = 0..)]
     pub patterns: Vec<String>,
+}
+
+fn parse_size(s: &str) -> Result<u64, String> {
+    let original = s.trim();
+    let normalized = original.replace([' ', '_'], "");
+    let (num, unit) = if let Some(pos) = normalized.find(|c: char| !c.is_ascii_digit() && c != '.')
+    {
+        let (n, u) = normalized.split_at(pos);
+        (n.to_string(), u.trim().to_lowercase())
+    } else {
+        (normalized, "b".to_string())
+    };
+    if num.is_empty() {
+        return Err(format!("Empty size: {original}"));
+    }
+    let value: f64 = num
+        .parse()
+        .map_err(|_| format!("Invalid size: {original}"))?;
+    let multiplier: u64 = match unit.as_str() {
+        "b" | "" => 1,
+        "k" | "kb" => 1024,
+        "m" | "mb" => 1024 * 1024,
+        "g" | "gb" => 1024 * 1024 * 1024,
+        "t" | "tb" => 1024u64 * 1024 * 1024 * 1024,
+        _ => return Err(format!("Unknown size unit: {unit}")),
+    };
+    Ok((value * multiplier as f64) as u64)
 }
 
 impl Args {

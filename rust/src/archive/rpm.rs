@@ -7,7 +7,8 @@ use rpm::FileType;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, validate_symlink_target, EntryInfo, ExtractOptions, LimitedWriter,
+    Progress,
 };
 
 pub fn extract_rpm(file_path: &Path, options: &ExtractOptions) -> Result<()> {
@@ -49,6 +50,10 @@ pub fn extract_rpm(file_path: &Path, options: &ExtractOptions) -> Result<()> {
         let is_dir = metadata.file_type() == FileType::Dir;
         let is_symlink = metadata.file_type() == FileType::SymbolicLink;
 
+        if !options.list {
+            options.limits.record_entry(size)?;
+        }
+
         if options.list {
             print_entry(&EntryInfo {
                 path: path.clone(),
@@ -71,6 +76,9 @@ pub fn extract_rpm(file_path: &Path, options: &ExtractOptions) -> Result<()> {
             #[cfg(unix)]
             {
                 if let Some(target) = metadata.linkto() {
+                    let target_path = Path::new(target);
+                    let parent = entry_path.parent().unwrap_or(&options.output_dir);
+                    validate_symlink_target(&options.output_dir, parent, target_path)?;
                     if let Some(parent) = entry_path.parent() {
                         if !parent.exists() {
                             fs::create_dir_all(parent)?;
@@ -105,8 +113,9 @@ pub fn extract_rpm(file_path: &Path, options: &ExtractOptions) -> Result<()> {
             ));
         }
 
-        let mut target_file = File::create(&target_path)?;
-        io::copy(&mut file.content.as_slice(), &mut target_file)?;
+        let target_file = File::create(&target_path)?;
+        let mut limited = LimitedWriter::new(target_file, options.limits.clone());
+        io::copy(&mut file.content.as_slice(), &mut limited)?;
         extracted_count += 1;
         if let Some(ref pb) = progress {
             pb.inc(1);

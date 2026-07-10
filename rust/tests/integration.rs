@@ -1513,3 +1513,166 @@ fn extracts_tar_lzo() {
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
+
+fn create_tar_hardlink(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut tar = tar::Builder::new(file);
+    let mut header = tar::Header::new_gnu();
+    header.set_entry_type(tar::EntryType::Link);
+    header.set_size(0);
+    header.set_path("link.txt").unwrap();
+    header.set_link_name("target.txt").unwrap();
+    header.set_cksum();
+    tar.append(&header, &[][..]).unwrap();
+    tar.finish().unwrap();
+    path
+}
+
+fn create_tar_symlink_outside(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut tar = tar::Builder::new(file);
+    let mut header = tar::Header::new_gnu();
+    header.set_entry_type(tar::EntryType::Symlink);
+    header.set_size(0);
+    header.set_path("link.txt").unwrap();
+    header.set_link_name("../evil.txt").unwrap();
+    header.set_cksum();
+    tar.append(&header, &[][..]).unwrap();
+    tar.finish().unwrap();
+    path
+}
+
+fn create_zip_bomb(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    let zeros = vec![0u8; 100_000];
+    zip.start_file("zeros.bin", options).unwrap();
+    zip.write_all(&zeros).unwrap();
+    zip.finish().unwrap();
+    path
+}
+
+#[test]
+fn rejects_tar_hardlink() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_hardlink(tmp.path(), "hardlink.tar");
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Hard links"));
+}
+
+#[test]
+fn rejects_tar_symlink_outside() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_symlink_outside(tmp.path(), "symlink.tar");
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Symlink target escapes"));
+}
+
+#[test]
+fn max_entry_count_warns() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar(tmp.path(), "test.tar", &[("a.txt", "A"), ("b.txt", "B")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--max-entry-count=1")
+        .arg(&archive)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("more than"));
+}
+
+#[test]
+fn max_entry_size_warns() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar(tmp.path(), "test.tar", &[("a.txt", "ABCD")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--max-entry-size=2")
+        .arg(&archive)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("entry size"));
+}
+
+#[test]
+fn max_total_size_warns() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar(
+        tmp.path(),
+        "test.tar",
+        &[("a.txt", "ABCD"), ("b.txt", "EFGH")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--max-total-size=5")
+        .arg(&archive)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Total extracted size"));
+}
+
+#[test]
+fn allow_unsafe_skips_limits() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar(
+        tmp.path(),
+        "test.tar",
+        &[("a.txt", "ABCD"), ("b.txt", "EFGH")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--max-entry-size=2")
+        .arg("--allow-unsafe")
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "ABCD");
+    assert_eq!(fs::read_to_string(output.join("b.txt")).unwrap(), "EFGH");
+}
+
+#[test]
+fn max_compression_ratio_warns() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip_bomb(tmp.path(), "bomb.zip");
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--max-compression-ratio=10")
+        .arg(&archive)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Compression ratio"));
+}

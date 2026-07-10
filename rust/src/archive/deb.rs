@@ -66,8 +66,10 @@ pub fn extract_deb(file_path: &Path, options: &ExtractOptions) -> Result<()> {
             ));
         }
 
-        extract_inner_tar(temp.as_file(), tar_suffix, options, &mut extracted_count)
-            .with_context(|| format!("Failed to extract inner tar from {name}"))?;
+        options.limits.enter_archive()?;
+        let res = extract_inner_tar(temp.as_file(), tar_suffix, options, &mut extracted_count);
+        options.limits.exit_archive();
+        res.with_context(|| format!("Failed to extract inner tar from {name}"))?;
     }
 
     if !options.quiet && !options.list {

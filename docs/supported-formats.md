@@ -69,6 +69,12 @@ All formats support the following shared options:
 - `--strip-components <N>`: Strip the first N leading path components
 - `--password <PASSWORD>`: Password for ZIP and 7-Zip archives
 - `--format <FORMAT>`: Force a format instead of auto-detecting
+- `--max-total-size <SIZE>`: Maximum total bytes to extract (default `10GB`)
+- `--max-entry-size <SIZE>`: Maximum bytes per extracted file (default `1GB`)
+- `--max-entry-count <N>`: Maximum number of entries to extract (default `10000`)
+- `--max-compression-ratio <N>`: Maximum allowed compression ratio (default `100`)
+- `--max-recursion-depth <N>`: Maximum nested-archive depth (default `3`)
+- `--allow-unsafe`: Skip security warnings and continue extraction when limits are exceeded
 
 ## Path Safety
 

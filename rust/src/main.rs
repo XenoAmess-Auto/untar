@@ -23,6 +23,14 @@ fn main() {
         }
     };
 
+    let limits = extract::LimitTracker::new(
+        args.max_total_size,
+        args.max_entry_size,
+        args.max_entry_count,
+        args.max_compression_ratio,
+        args.max_recursion_depth,
+        args.allow_unsafe,
+    );
     let options = ExtractOptions {
         output_dir: args.output_dir(),
         quiet: args.quiet,
@@ -33,6 +41,7 @@ fn main() {
         patterns: args.patterns,
         password: args.password,
         format: args.format,
+        limits,
     };
 
     if let Err(e) = extract::extract_archive(Path::new(&file), &options) {

@@ -8,7 +8,7 @@ use unarc_rs::ArchiveError;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_tarz(file_path: &Path, options: &ExtractOptions) -> Result<()> {
@@ -106,6 +106,8 @@ fn extract_entry(
         return Ok(false);
     }
 
+    options.limits.record_entry(entry.original_size())?;
+
     let target_path = match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
         .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
     {
@@ -129,7 +131,9 @@ fn extract_entry(
     }
 
     let mut target = File::create(&target_path)?;
-    target.write_all(data)?;
+    let mut limited = LimitedWriter::new(&mut target, options.limits.clone());
+    limited.write_all(data)?;
+    drop(limited);
 
     if let Some(pb) = progress {
         let size = target.metadata().map(|m| m.len()).unwrap_or(0);

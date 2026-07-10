@@ -7,7 +7,7 @@ use cpio::NewcReader;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_cpio(file_path: &Path, options: &ExtractOptions) -> Result<()> {
@@ -43,6 +43,10 @@ pub fn extract_cpio(file_path: &Path, options: &ExtractOptions) -> Result<()> {
         let size = entry.file_size() as u64;
         let mode = entry.mode() & 0o7777;
         let is_dir = (entry.mode() & 0o170000) == 0o040000;
+
+        if !options.list {
+            options.limits.record_entry(size)?;
+        }
 
         if options.list {
             print_entry(&EntryInfo {
@@ -88,8 +92,9 @@ pub fn extract_cpio(file_path: &Path, options: &ExtractOptions) -> Result<()> {
                 ));
             }
 
-            let mut target_file = File::create(&target_path)?;
-            io::copy(&mut reader, &mut target_file)?;
+            let target_file = File::create(&target_path)?;
+            let mut limited = LimitedWriter::new(target_file, options.limits.clone());
+            io::copy(&mut reader, &mut limited)?;
             extracted_count += 1;
             if let Some(ref pb) = progress {
                 pb.inc(1);

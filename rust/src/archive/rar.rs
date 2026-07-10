@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
@@ -6,8 +7,8 @@ use std::path::Path;
 use anyhow::{anyhow, Context, Result};
 
 use crate::extract::{
-    print_entry, resolve_conflict, safe_output_path, should_extract, strip_path_components,
-    EntryInfo, ExtractOptions, Progress,
+    format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<()> {
@@ -15,6 +16,13 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
 
     let total_count = archive.members().count();
     let extracted_count = RefCell::new(0u64);
+    let member_sizes = RefCell::new(HashMap::new());
+    for member in archive.members() {
+        let m = &member.meta;
+        member_sizes
+            .borrow_mut()
+            .insert(m.name_lossy(), (m.unpacked_size, m.packed_size));
+    }
     let progress = (!options.quiet && !options.list).then(|| Progress::bar(total_count as u64));
 
     if !options.quiet && !options.list {
@@ -48,6 +56,14 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
     archive
         .extract_to(password, |meta| {
             let name = meta.name_lossy();
+            let (size, packed) = member_sizes.borrow().get(&name).copied().unwrap_or((0, 0));
+            if let Err(e) = options.limits.record_entry(size) {
+                return Err(map_rar_err(e));
+            }
+            if let Err(e) = options.limits.check_ratio(packed, size) {
+                return Err(map_rar_err(e));
+            }
+
             let path = match strip_path_components(Path::new(&name), options.strip_components) {
                 Some(p) => p,
                 None => return Ok(Box::new(io::sink()) as Box<dyn Write>),
@@ -108,12 +124,15 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
             if let Some(ref pb) = progress {
                 let mut count = extracted_count.borrow_mut();
                 *count += 1;
-                pb.set_message(format!("[{}] {}", *count, name));
+                pb.set_message(format!("[{}] {} ({})", *count, name, format_size(size)));
                 pb.inc(1);
             }
 
             match fs::File::create(&target_path).map_err(map_rar_err) {
-                Ok(file) => Ok(Box::new(file) as Box<dyn Write>),
+                Ok(file) => {
+                    Ok(Box::new(LimitedWriter::new(file, options.limits.clone()))
+                        as Box<dyn Write>)
+                }
                 Err(e) => Err(e),
             }
         })

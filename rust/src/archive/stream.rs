@@ -14,7 +14,7 @@ use ruzstd::decoding::StreamingDecoder;
 use crate::archive::lzo;
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_stream(
@@ -52,6 +52,8 @@ pub fn extract_stream(
         return Ok(());
     }
 
+    options.limits.record_entry(0)?;
+
     let target_path = match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
         .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
     {
@@ -71,49 +73,51 @@ pub fn extract_stream(
     }
 
     let mut reader = BufReader::new(file);
-    let mut target_file = File::create(&target_path)?;
+    let target_file = File::create(&target_path)?;
+    let mut limited = LimitedWriter::new(target_file, options.limits.clone());
 
     match ext {
         ".gz" => {
             let mut decoder = GzDecoder::new(reader);
-            io::copy(&mut decoder, &mut target_file)?
+            io::copy(&mut decoder, &mut limited)?
         }
         ".bz2" => {
             let mut decoder = BzDecoder::new(reader);
-            io::copy(&mut decoder, &mut target_file)?
+            io::copy(&mut decoder, &mut limited)?
         }
         ".xz" => {
             let mut decoder = XzDecoder::new(reader);
-            io::copy(&mut decoder, &mut target_file)?
+            io::copy(&mut decoder, &mut limited)?
         }
         ".zst" => {
             let mut decoder = StreamingDecoder::new(reader)?;
-            io::copy(&mut decoder, &mut target_file)?
+            io::copy(&mut decoder, &mut limited)?
         }
         ".lz4" => {
             let mut decoder = FrameDecoder::new(reader);
-            io::copy(&mut decoder, &mut target_file)?
+            io::copy(&mut decoder, &mut limited)?
         }
         ".br" => {
             let mut decoder = Decompressor::new(reader, 4096);
-            io::copy(&mut decoder, &mut target_file)?
+            io::copy(&mut decoder, &mut limited)?
         }
         ".lz" => {
             let mut decoder = LzipReader::new(reader);
-            io::copy(&mut decoder, &mut target_file)?
+            io::copy(&mut decoder, &mut limited)?
         }
         ".lzma" => {
-            lzma_rs::lzma_decompress(&mut reader, &mut target_file)?;
+            lzma_rs::lzma_decompress(&mut reader, &mut limited)?;
             0
         }
         ".lzo" => {
             let mut decoder = lzo::LzopReader::new(reader)?;
-            io::copy(&mut decoder, &mut target_file)?
+            io::copy(&mut decoder, &mut limited)?
         }
         _ => return Err(anyhow!("Unsupported stream extension: {ext}")),
     };
 
     if let Some(ref pb) = progress {
+        let target_file = limited.into_inner();
         let size = target_file.metadata().map(|m| m.len()).unwrap_or(0);
         pb.finish(format!(
             "Decompressed to {} ({})",

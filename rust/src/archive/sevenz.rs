@@ -7,7 +7,7 @@ use sevenz_rust2::{ArchiveReader, Password};
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions, Progress,
+    strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
 pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result<()> {
@@ -61,6 +61,16 @@ pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result
             if entry.is_anti_item() {
                 return Ok(true);
             }
+
+            let size = entry.size();
+            let packed_size = entry.compressed_size;
+            if let Err(e) = options.limits.record_entry(size) {
+                return Err(map_err(e));
+            }
+            if let Err(e) = options.limits.check_ratio(packed_size, size) {
+                return Err(map_err(e));
+            }
+
             let path = match strip_path_components(Path::new(name), options.strip_components) {
                 Some(p) => p,
                 None => {
@@ -125,8 +135,9 @@ pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result
                 ));
             }
 
-            let mut file = fs::File::create(&target_path).map_err(map_err)?;
-            io::copy(reader, &mut file).map_err(map_err)?;
+            let file = fs::File::create(&target_path).map_err(map_err)?;
+            let mut limited = LimitedWriter::new(file, options.limits.clone());
+            io::copy(reader, &mut limited).map_err(map_err)?;
             extracted_count += 1;
             if let Some(ref pb) = progress {
                 pb.inc(1);

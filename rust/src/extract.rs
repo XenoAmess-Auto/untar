@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
-use std::io::{self, IsTerminal};
+use std::io::{self, IsTerminal, Write};
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use crate::archive::{
     ar, cab, cpio, deb, format, iso, lha, rar, rpm, sevenz, squashfs, stream, tar, unarc, xar,
@@ -20,6 +21,229 @@ pub struct ExtractOptions {
     pub patterns: Vec<String>,
     pub password: Option<String>,
     pub format: Option<String>,
+    pub limits: LimitTracker,
+}
+
+/// Tracks security limits during extraction and prompts the user when a limit
+/// would be exceeded.
+#[derive(Debug, Clone)]
+pub struct LimitTracker {
+    inner: Arc<Mutex<LimitTrackerInner>>,
+}
+
+#[derive(Debug)]
+struct LimitTrackerInner {
+    max_total_size: u64,
+    max_entry_size: u64,
+    max_entry_count: u64,
+    max_compression_ratio: u64,
+    max_recursion_depth: u32,
+    allow_unsafe: bool,
+    total_written: u64,
+    entry_count: u64,
+    depth: u32,
+    warned: bool,
+    confirmed: bool,
+}
+
+impl LimitTracker {
+    pub fn new(
+        max_total_size: u64,
+        max_entry_size: u64,
+        max_entry_count: u64,
+        max_compression_ratio: u64,
+        max_recursion_depth: u32,
+        allow_unsafe: bool,
+    ) -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(LimitTrackerInner {
+                max_total_size,
+                max_entry_size,
+                max_entry_count,
+                max_compression_ratio,
+                max_recursion_depth,
+                allow_unsafe,
+                total_written: 0,
+                entry_count: 0,
+                depth: 0,
+                warned: false,
+                confirmed: false,
+            })),
+        }
+    }
+
+    fn with_inner<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&mut LimitTrackerInner) -> T,
+    {
+        let mut inner = self.inner.lock().unwrap();
+        f(&mut inner)
+    }
+
+    fn is_allowed(&self) -> bool {
+        self.with_inner(|inner| inner.allow_unsafe || inner.confirmed)
+    }
+
+    fn set_warned(&self) {
+        self.with_inner(|inner| {
+            inner.warned = true;
+        });
+    }
+
+    fn set_confirmed(&self) {
+        self.with_inner(|inner| {
+            inner.confirmed = true;
+        });
+    }
+
+    fn prompt(message: &str) -> Result<bool> {
+        if !is_tty() {
+            return Ok(false);
+        }
+        eprint!("Warning: {message}\nContinue anyway? [y/N] ");
+        Write::flush(&mut io::stderr())?;
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        let input = input.trim().to_lowercase();
+        Ok(input == "y" || input == "yes")
+    }
+
+    fn maybe_continue(&self, message: String) -> Result<()> {
+        if self.is_allowed() {
+            return Ok(());
+        }
+        self.set_warned();
+        if Self::prompt(&message)? {
+            self.set_confirmed();
+            Ok(())
+        } else {
+            Err(anyhow!("Aborted: {message}"))
+        }
+    }
+
+    pub fn record_entry(&self, size: u64) -> Result<()> {
+        let exceeds_entry = self.with_inner(|inner| {
+            inner.entry_count += 1;
+            if inner.entry_count > inner.max_entry_count {
+                Some(format!(
+                    "Archive contains more than {} entries",
+                    inner.max_entry_count
+                ))
+            } else if size > inner.max_entry_size {
+                Some(format!(
+                    "Archive entry exceeds maximum entry size of {}",
+                    format_size(inner.max_entry_size)
+                ))
+            } else {
+                None
+            }
+        });
+        if let Some(msg) = exceeds_entry {
+            self.maybe_continue(msg)?;
+        }
+        Ok(())
+    }
+
+    pub fn record_written(&self, bytes: u64) -> Result<()> {
+        let exceeds_total = self.with_inner(|inner| {
+            inner.total_written = inner.total_written.saturating_add(bytes);
+            if inner.total_written > inner.max_total_size {
+                Some(format!(
+                    "Total extracted size exceeds {}",
+                    format_size(inner.max_total_size)
+                ))
+            } else {
+                None
+            }
+        });
+        if let Some(msg) = exceeds_total {
+            self.maybe_continue(msg)?;
+        }
+        Ok(())
+    }
+
+    pub fn check_ratio(&self, compressed: u64, uncompressed: u64) -> Result<()> {
+        if compressed == 0 {
+            return Ok(());
+        }
+        let ratio = (uncompressed as f64) / (compressed as f64);
+        let max = self.with_inner(|inner| inner.max_compression_ratio as f64);
+        if ratio > max {
+            self.maybe_continue(format!(
+                "Compression ratio ({ratio:.0}:1) exceeds maximum allowed ({max:.0}:1)"
+            ))?;
+        }
+        Ok(())
+    }
+
+    pub fn enter_archive(&self) -> Result<()> {
+        let exceeds_depth = self.with_inner(|inner| {
+            inner.depth += 1;
+            if inner.depth > inner.max_recursion_depth {
+                Some(format!(
+                    "Archive recursion depth exceeds {}",
+                    inner.max_recursion_depth
+                ))
+            } else {
+                None
+            }
+        });
+        if let Some(msg) = exceeds_depth {
+            self.maybe_continue(msg)?;
+        }
+        Ok(())
+    }
+
+    pub fn exit_archive(&self) {
+        self.with_inner(|inner| {
+            if inner.depth > 0 {
+                inner.depth -= 1;
+            }
+        });
+    }
+}
+
+/// Wraps a writer so that per-entry and total extraction limits are enforced.
+pub struct LimitedWriter<W> {
+    inner: W,
+    tracker: LimitTracker,
+    entry_written: u64,
+    entry_limit: u64,
+}
+
+impl<W: Write> LimitedWriter<W> {
+    pub fn new(inner: W, tracker: LimitTracker) -> Self {
+        let entry_limit = tracker.with_inner(|inner| inner.max_entry_size);
+        Self {
+            inner,
+            tracker,
+            entry_written: 0,
+            entry_limit,
+        }
+    }
+
+    pub fn into_inner(self) -> W {
+        self.inner
+    }
+}
+
+impl<W: Write> Write for LimitedWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.tracker
+            .record_written(buf.len() as u64)
+            .map_err(io::Error::other)?;
+        self.entry_written = self.entry_written.saturating_add(buf.len() as u64);
+        if !self.tracker.is_allowed() && self.entry_written > self.entry_limit {
+            return Err(io::Error::other(
+                "Exceeded maximum entry size while writing",
+            ));
+        }
+        self.inner.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
 }
 
 /// Information about an archive entry for listing.
@@ -71,6 +295,50 @@ pub fn safe_output_path(output_dir: &Path, entry_path: &Path) -> Result<PathBuf>
         .iter()
         .fold(output_dir.to_path_buf(), |p, c| p.join(c));
     Ok(output_path)
+}
+
+/// Validate that a symlink target stays inside the output directory.
+///
+/// The target is resolved relative to `link_parent` (the directory containing the
+/// symlink). Absolute targets and targets that escape `output_dir` are rejected.
+pub fn validate_symlink_target(output_dir: &Path, link_parent: &Path, target: &Path) -> Result<()> {
+    if target.is_absolute() {
+        return Err(anyhow!(
+            "Absolute symlink target is not allowed: {}",
+            target.display()
+        ));
+    }
+
+    let relative_parent = link_parent
+        .strip_prefix(output_dir)
+        .map_err(|_| anyhow!("Symlink parent is outside output directory"))?;
+    let mut components: Vec<std::ffi::OsString> = relative_parent
+        .components()
+        .map(|c| c.as_os_str().to_os_string())
+        .collect();
+
+    for component in target.components() {
+        match component {
+            std::path::Component::Normal(c) => components.push(c.to_os_string()),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                if components.pop().is_none() {
+                    return Err(anyhow!(
+                        "Symlink target escapes output directory: {}",
+                        target.display()
+                    ));
+                }
+            }
+            std::path::Component::RootDir | std::path::Component::Prefix(_) => {
+                return Err(anyhow!(
+                    "Absolute symlink target is not allowed: {}",
+                    target.display()
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Strip the first N leading path components from a path.
@@ -259,7 +527,8 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
     std::fs::create_dir_all(&options.output_dir)
         .with_context(|| format!("Cannot create directory: {}", options.output_dir.display()))?;
 
-    match fmt {
+    options.limits.enter_archive()?;
+    let result = match fmt {
         format::Format::TarGz => tar::extract_tar_gz(file, options),
         format::Format::TarXz => tar::extract_tar_xz(file, options),
         format::Format::TarBz2 => tar::extract_tar_bz2(file, options),
@@ -296,7 +565,9 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         format::Format::Lzma => stream::extract_stream(file, file_path, options, ".lzma"),
         format::Format::Lzo => stream::extract_stream(file, file_path, options, ".lzo"),
         format::Format::Lz => stream::extract_stream(file, file_path, options, ".lz"),
-    }
+    };
+    options.limits.exit_archive();
+    result
 }
 
 fn extract_extension(file_name_lower: &str) -> Option<&str> {
