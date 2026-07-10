@@ -174,6 +174,48 @@ pub fn is_tty() -> bool {
     std::io::stdin().is_terminal()
 }
 
+/// Progress reporter for extraction.
+///
+/// When the total number of items is known upfront, a bar is shown; otherwise a spinner is used.
+pub struct Progress {
+    bar: indicatif::ProgressBar,
+}
+
+impl Progress {
+    pub fn spinner() -> Self {
+        let bar = indicatif::ProgressBar::new_spinner();
+        bar.set_style(
+            indicatif::ProgressStyle::default_spinner()
+                .template("{spinner:.green} {msg}")
+                .expect("invalid spinner template"),
+        );
+        Self { bar }
+    }
+
+    pub fn bar(total: u64) -> Self {
+        let bar = indicatif::ProgressBar::new(total);
+        bar.set_style(
+            indicatif::ProgressStyle::default_bar()
+                .template("{spinner:.green} [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+                .expect("invalid bar template")
+                .progress_chars("#>-"),
+        );
+        Self { bar }
+    }
+
+    pub fn set_message(&self, msg: impl Into<String>) {
+        self.bar.set_message(msg.into());
+    }
+
+    pub fn inc(&self, delta: u64) {
+        self.bar.inc(delta);
+    }
+
+    pub fn finish(&self, msg: impl Into<String>) {
+        self.bar.finish_with_message(msg.into());
+    }
+}
+
 /// Print a single archive entry for `--list`.
 pub fn print_entry(info: &EntryInfo) {
     let mode_str = info.mode.map(|m| format!("{m:04o} ")).unwrap_or_default();

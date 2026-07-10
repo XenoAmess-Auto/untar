@@ -27,6 +27,8 @@ rars = "0.4"
 anyhow = "1.0"
 # Clap for CLI argument parsing (using features to minimize size)
 clap = { version = "4.6", features = ["cargo", "derive"] }
+# Progress bar for extraction
+indicatif = "0.17"
 
 [dev-dependencies]
 tempfile = "3"

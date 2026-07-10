@@ -7,7 +7,7 @@ use anyhow::{anyhow, Context, Result};
 
 use crate::extract::{
     print_entry, resolve_conflict, safe_output_path, should_extract, strip_path_components,
-    EntryInfo, ExtractOptions,
+    EntryInfo, ExtractOptions, Progress,
 };
 
 pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<()> {
@@ -15,6 +15,7 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
 
     let total_count = archive.members().count();
     let extracted_count = RefCell::new(0u64);
+    let progress = (!options.quiet && !options.list).then(|| Progress::bar(total_count as u64));
 
     if !options.quiet && !options.list {
         println!("Total files: {total_count}");
@@ -70,6 +71,12 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
                     }
                 }
                 fs::create_dir_all(&entry_path).map_err(map_rar_err)?;
+                if let Some(ref pb) = progress {
+                    let mut count = extracted_count.borrow_mut();
+                    *count += 1;
+                    pb.set_message(format!("[{}] {}", *count, name));
+                    pb.inc(1);
+                }
                 return Ok(Box::new(io::sink()) as Box<dyn Write>);
             }
 
@@ -81,7 +88,14 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
                     .map_err(map_rar_err)
                 {
                     Ok(Some(p)) => p,
-                    Ok(None) => return Ok(Box::new(io::sink()) as Box<dyn Write>),
+                    Ok(None) => {
+                        if let Some(ref pb) = progress {
+                            let mut count = extracted_count.borrow_mut();
+                            *count += 1;
+                            pb.inc(1);
+                        }
+                        return Ok(Box::new(io::sink()) as Box<dyn Write>);
+                    }
                     Err(e) => return Err(e),
                 };
 
@@ -91,10 +105,11 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
                 }
             }
 
-            if !options.quiet {
+            if let Some(ref pb) = progress {
                 let mut count = extracted_count.borrow_mut();
                 *count += 1;
-                println!("[{}] {}", *count, name);
+                pb.set_message(format!("[{}] {}", *count, name));
+                pb.inc(1);
             }
 
             match fs::File::create(&target_path).map_err(map_rar_err) {
@@ -105,7 +120,11 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
         .map_err(|e| anyhow!("RAR extraction failed: {e}"))?;
 
     if !options.quiet && !options.list {
-        println!("Extracted files: {}", extracted_count.borrow());
+        if let Some(ref pb) = progress {
+            pb.finish(format!("Extracted {} files", extracted_count.borrow()));
+        } else {
+            println!("Extracted files: {}", extracted_count.borrow());
+        }
     }
 
     Ok(())

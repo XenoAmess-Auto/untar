@@ -11,7 +11,7 @@ use xz2::read::XzDecoder;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions,
+    strip_path_components, EntryInfo, ExtractOptions, Progress,
 };
 
 pub fn extract_tar_gz<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
@@ -34,6 +34,7 @@ fn extract_tar_reader<R: Read>(reader: R, options: &ExtractOptions) -> Result<()
     let mut archive = Archive::new(reader);
     let mut entry_count = 0u64;
     let mut extracted_count = 0u64;
+    let progress = (!options.quiet && !options.list).then(Progress::spinner);
 
     for entry in archive.entries()? {
         let mut entry = entry?;
@@ -73,8 +74,8 @@ fn extract_tar_reader<R: Read>(reader: R, options: &ExtractOptions) -> Result<()
                     fs::create_dir_all(parent)?;
                 }
             }
-            if !options.quiet {
-                println!("[{:?}] {}", entry_count, path.display());
+            if let Some(ref pb) = progress {
+                pb.set_message(format!("[{:?}] {}", entry_count, path.display()));
             }
             fs::create_dir_all(&entry_path)?;
             continue;
@@ -94,18 +95,21 @@ fn extract_tar_reader<R: Read>(reader: R, options: &ExtractOptions) -> Result<()
             }
         }
 
-        if !options.quiet {
-            println!(
+        if let Some(ref pb) = progress {
+            pb.set_message(format!(
                 "[{:?}] {} ({})",
                 entry_count,
                 path.display(),
                 format_size(size)
-            );
+            ));
         }
 
         let mut file = File::create(&target_path)?;
         io::copy(&mut entry, &mut file)?;
         extracted_count += 1;
+        if let Some(ref pb) = progress {
+            pb.inc(1);
+        }
 
         // Preserve file permissions (Unix mode).
         if let Some(m) = mode {
@@ -120,7 +124,11 @@ fn extract_tar_reader<R: Read>(reader: R, options: &ExtractOptions) -> Result<()
     }
 
     if !options.quiet && !options.list {
-        println!("Total files: {extracted_count}");
+        if let Some(ref pb) = progress {
+            pb.finish(format!("Extracted {extracted_count} files"));
+        } else {
+            println!("Extracted files: {extracted_count}");
+        }
     }
 
     Ok(())

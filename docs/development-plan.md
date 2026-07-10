@@ -105,7 +105,7 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 ## Phase 5: Optional Enhancements
 
 ### 5.1 Progress Bar
-- Use `indicatif` to show overall extraction progress (disabled by `--quiet`).
+- [x] Use `indicatif` to show overall extraction progress (disabled by `--quiet`).
 
 ### 5.2 Docker Image
 - Provide a minimal Dockerfile for containerized usage.

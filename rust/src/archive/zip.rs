@@ -7,13 +7,14 @@ use zip::ZipArchive;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions,
+    strip_path_components, EntryInfo, ExtractOptions, Progress,
 };
 
 pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result<()> {
     let mut archive = ZipArchive::new(reader)?;
     let total_count = archive.len();
     let mut extracted_count = 0u64;
+    let progress = (!options.quiet && !options.list).then(|| Progress::bar(total_count as u64));
 
     if !options.quiet && !options.list {
         println!("Total files: {total_count}");
@@ -61,7 +62,13 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
                     fs::create_dir_all(parent)?;
                 }
             }
+            if let Some(ref pb) = progress {
+                pb.set_message(format!("[{}] {}", i + 1, name));
+            }
             fs::create_dir_all(&entry_path)?;
+            if let Some(ref pb) = progress {
+                pb.inc(1);
+            }
             continue;
         }
 
@@ -70,7 +77,12 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
                 .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
             {
                 Some(p) => p,
-                None => continue,
+                None => {
+                    if let Some(ref pb) = progress {
+                        pb.inc(1);
+                    }
+                    continue;
+                }
             };
 
         if let Some(parent) = target_path.parent() {
@@ -79,17 +91,24 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
             }
         }
 
-        if !options.quiet {
-            println!("[{:?}] {} ({})", i + 1, name, format_size(size));
+        if let Some(ref pb) = progress {
+            pb.set_message(format!("[{}] {} ({})", i + 1, name, format_size(size)));
         }
 
         let mut file = File::create(&target_path)?;
         io::copy(&mut entry, &mut file)?;
         extracted_count += 1;
+        if let Some(ref pb) = progress {
+            pb.inc(1);
+        }
     }
 
     if !options.quiet && !options.list {
-        println!("Extracted files: {extracted_count}");
+        if let Some(ref pb) = progress {
+            pb.finish(format!("Extracted {extracted_count} files"));
+        } else {
+            println!("Extracted files: {extracted_count}");
+        }
     }
 
     Ok(())

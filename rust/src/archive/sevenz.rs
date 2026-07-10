@@ -7,7 +7,7 @@ use sevenz_rust2::{ArchiveReader, Password};
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
-    strip_path_components, EntryInfo, ExtractOptions,
+    strip_path_components, EntryInfo, ExtractOptions, Progress,
 };
 
 pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result<()> {
@@ -21,6 +21,7 @@ pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result
 
     let total_count = archive.files.len();
     let mut extracted_count = 0u64;
+    let progress = (!options.quiet && !options.list).then(|| Progress::bar(total_count as u64));
 
     if !options.quiet && !options.list {
         println!("Total files: {total_count}");
@@ -82,7 +83,13 @@ pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result
                         fs::create_dir_all(parent).map_err(map_err)?;
                     }
                 }
+                if let Some(ref pb) = progress {
+                    pb.set_message(format!("[{}] {}", extracted_count + 1, name));
+                }
                 fs::create_dir_all(&entry_path).map_err(map_err)?;
+                if let Some(ref pb) = progress {
+                    pb.inc(1);
+                }
                 return Ok(true);
             }
 
@@ -96,6 +103,9 @@ pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result
                     Some(p) => p,
                     None => {
                         io::copy(reader, &mut io::sink()).map_err(map_err)?;
+                        if let Some(ref pb) = progress {
+                            pb.inc(1);
+                        }
                         return Ok(true);
                     }
                 };
@@ -106,25 +116,32 @@ pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result
                 }
             }
 
-            if !options.quiet {
-                println!(
+            if let Some(ref pb) = progress {
+                pb.set_message(format!(
                     "[{}] {} ({})",
                     extracted_count + 1,
                     name,
                     format_size(entry.size())
-                );
+                ));
             }
 
             let mut file = fs::File::create(&target_path).map_err(map_err)?;
             io::copy(reader, &mut file).map_err(map_err)?;
             extracted_count += 1;
+            if let Some(ref pb) = progress {
+                pb.inc(1);
+            }
 
             Ok(true)
         })
         .map_err(|e| anyhow!("7z extraction failed: {e}"))?;
 
     if !options.quiet && !options.list {
-        println!("Extracted files: {extracted_count}");
+        if let Some(ref pb) = progress {
+            pb.finish(format!("Extracted {extracted_count} files"));
+        } else {
+            println!("Extracted files: {extracted_count}");
+        }
     }
 
     Ok(())
