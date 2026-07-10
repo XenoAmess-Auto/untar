@@ -67,15 +67,17 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 
 ## Phase 3: Extended Format Support
 
+**Status: completed**
+
 ### 3.1 Password-Protected ZIP
-- `-p, --password <PASSWORD>`: decrypt password-protected ZIP archives using the `zip` crate.
+- [x] `-p, --password <PASSWORD>`: decrypt password-protected ZIP archives using the `zip` crate.
 
 ### 3.2 7z Support
-- Support `.7z` and `.tar.7z` via `sevenz-rust2` (pure Rust).
+- [x] Support `.7z` and `.tar.7z` via `sevenz-rust2` (pure Rust).
 
 ### 3.3 RAR Support (Pure Rust)
-- Support `.rar` via the `rars` crate (pure Rust high-level API), falling back to `rar` if needed.
-- If the pure Rust implementation proves insufficient for production use, document the limitation and skip RAR.
+- [x] Support `.rar` via the `rars` crate (pure Rust high-level API), falling back to `rar` if needed.
+- [x] If the pure Rust implementation proves insufficient for production use, document the limitation and skip RAR.
 
 ---
 
@@ -109,8 +111,9 @@ Current status: Rust implementation in `rust/`, single-file `src/main.rs`, CI/CD
 - Provide a minimal Dockerfile for containerized usage.
 
 ### 5.3 Shell Completion & Man Page
-- Generate shell completions via `clap_complete`.
-- Generate a man page via `clap_mangen`.
+- [x] Generate shell completions via `clap_complete`.
+- [x] Generate a man page via `clap_mangen`.
+- [x] Attach completions and man page to release artifacts.
 
 ---
 
