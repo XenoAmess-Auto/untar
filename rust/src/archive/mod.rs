@@ -1,10 +1,15 @@
 pub mod ar;
 pub mod cab;
 pub mod cpio;
+pub mod deb;
+pub mod format;
 pub mod iso;
 pub mod lha;
+pub mod lzo;
 pub mod rar;
+pub mod rpm;
 pub mod sevenz;
+pub mod squashfs;
 pub mod stream;
 pub mod tar;
 pub mod xar;

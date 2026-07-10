@@ -49,6 +49,11 @@ pub struct Args {
     #[arg(short = 'p', long)]
     pub password: Option<String>,
 
+    /// Force a specific archive format instead of auto-detecting from the file
+    /// extension or contents.
+    #[arg(long = "format", value_name = "FORMAT")]
+    pub format: Option<String>,
+
     /// Archive file to extract.
     #[arg(value_name = "FILE", index = 1)]
     pub file: Option<String>,

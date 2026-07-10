@@ -32,6 +32,7 @@ fn main() {
         strip_components: args.strip_components,
         patterns: args.patterns,
         password: args.password,
+        format: args.format,
     };
 
     if let Err(e) = extract::extract_archive(Path::new(&file), &options) {

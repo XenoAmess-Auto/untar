@@ -132,6 +132,7 @@ untar --help
 | Zstandard-compressed Tar | `.tar.zst`, `.tzst` | Zstandard-compressed tar archive |
 | LZ4-compressed Tar | `.tar.lz4` | LZ4-compressed tar archive |
 | Brotli-compressed Tar | `.tar.br` | Brotli-compressed tar archive |
+| LZO-compressed Tar | `.tar.lzo` | LZO/lzop-compressed tar archive |
 | Zip | `.zip` | ZIP archive (including AES password-protected) |
 | 7-Zip | `.7z` | 7z archive (including password-protected) |
 | RAR | `.rar` | RAR archive |
@@ -141,15 +142,22 @@ untar --help
 | ISO 9660 | `.iso` | ISO 9660 CD/DVD image (primary volume names) |
 | XAR | `.xar` | XAR archive / macOS installer package payload |
 | LHA/LZH | `.lha`, `.lzh` | LHA/LZH archive |
+| Debian package | `.deb` | Debian/Ubuntu package (extracts `data.tar.*`) |
+| SquashFS | `.squashfs`, `.sqfs`, `.sfs`, `.snap` | SquashFS filesystem image |
+| RPM package | `.rpm` | RPM package (Red Hat/Fedora/openSUSE) |
+| POSIX pax | `.pax` | POSIX pax archive (handled as tar) |
 | Gzip stream | `.gz` | Single gzip-compressed file |
 | BZip2 stream | `.bz2` | Single bzip2-compressed file |
 | XZ stream | `.xz` | Single XZ-compressed file |
 | Zstandard stream | `.zst` | Single zstandard-compressed file |
 | LZ4 stream | `.lz4` | Single LZ4-compressed file |
-| Brotli stream | `.br` | Single brotli-compressed file |
-| LZMA stream | `.lzma` | Single LZMA-compressed file |
+| Brotli stream | `.br` | Single brotli-compressed file (extension only) |
+| LZMA stream | `.lzma` | Single LZMA-compressed file (extension only) |
+| LZO stream | `.lzo` | Single LZO/lzop-compressed file |
 
 Note: `.tar.lz` (LZIP), `.tar.Z` (Unix compress), `.ace`, `.arc`, and `.zoo` are not supported due to the lack of viable pure-Rust implementations.
+
+`untar` will automatically detect the actual format from the file's magic number if the extension is missing or incorrect. You can also force a format with `--format <FORMAT>`.
 
 ### Command Line Options
 
@@ -168,6 +176,7 @@ Options:
                                (ask, error, overwrite, skip, rename)
       --rename-suffix <SUFFIX>  Suffix used when renaming existing files [default: .1]
       --strip-components <N>   Strip the first N leading path components
+      --format <FORMAT>        Force a format instead of auto-detecting
   -h, --help                   Print help
   -V, --version                Print version
 ```
@@ -251,7 +260,7 @@ untar/
 
 - [tar](https://crates.io/crates/tar) 0.4 - Tar archive handling
 - [flate2](https://crates.io/crates/flate2) 1.1 - GZip compression support
-- [xz2](https://crates.io/crates/xz2) 0.1 - XZ compression support
+- [liblzma](https://crates.io/crates/liblzma) 0.4 - XZ compression support
 - [bzip2](https://crates.io/crates/bzip2) 0.6 - BZip2 compression support
 - [lzma-rs](https://crates.io/crates/lzma-rs) 0.3 - LZMA decompression
 - [ruzstd](https://crates.io/crates/ruzstd) 0.8 - Zstandard decompression

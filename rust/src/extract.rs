@@ -2,7 +2,10 @@ use anyhow::{anyhow, Context, Result};
 use std::io::{self, IsTerminal};
 use std::path::{Path, PathBuf};
 
-use crate::archive::{ar, cab, cpio, iso, lha, rar, sevenz, stream, tar, xar, zip as zip_mod};
+use crate::archive::{
+    ar, cab, cpio, deb, format, iso, lha, rar, rpm, sevenz, squashfs, stream, tar, xar,
+    zip as zip_mod,
+};
 use crate::cli::OnExists;
 
 /// Options controlling extraction or listing.
@@ -16,6 +19,7 @@ pub struct ExtractOptions {
     pub strip_components: Option<usize>,
     pub patterns: Vec<String>,
     pub password: Option<String>,
+    pub format: Option<String>,
 }
 
 /// Information about an archive entry for listing.
@@ -238,73 +242,102 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
         .unwrap_or("")
         .to_lowercase();
 
+    let ext = extract_extension(&file_name_lower).unwrap_or_default();
+
+    let fmt = format::resolve_format(file_path, options.format.as_deref(), ext)
+        .with_context(|| format!("Cannot determine format: {}", file_path.display()))?;
+
     if !options.quiet && !options.list {
         let file_size = file.metadata()?.len();
         println!("Archive: {}", file_path.display());
         println!("Size: {}", format_size(file_size));
+        if !ext.is_empty() {
+            println!("Detected format: {fmt:?}");
+        }
     }
 
     std::fs::create_dir_all(&options.output_dir)
         .with_context(|| format!("Cannot create directory: {}", options.output_dir.display()))?;
 
-    if file_name_lower.ends_with(".tar.gz") || file_name_lower.ends_with(".tgz") {
-        tar::extract_tar_gz(file, options)?;
-    } else if file_name_lower.ends_with(".tar.xz") || file_name_lower.ends_with(".txz") {
-        tar::extract_tar_xz(file, options)?;
-    } else if file_name_lower.ends_with(".tar.bz2")
-        || file_name_lower.ends_with(".tbz2")
-        || file_name_lower.ends_with(".tbz")
-    {
-        tar::extract_tar_bz2(file, options)?;
-    } else if file_name_lower.ends_with(".tar.lzma") || file_name_lower.ends_with(".tlz") {
-        tar::extract_tar_lzma(file, options)?;
-    } else if file_name_lower.ends_with(".tar.zst") || file_name_lower.ends_with(".tzst") {
-        tar::extract_tar_zst(file, options)?;
-    } else if file_name_lower.ends_with(".tar.lz4") {
-        tar::extract_tar_lz4(file, options)?;
-    } else if file_name_lower.ends_with(".tar.br") {
-        tar::extract_tar_br(file, options)?;
-    } else if file_name_lower.ends_with(".zip") {
-        zip_mod::extract_zip(file, options)?;
-    } else if file_name_lower.ends_with(".7z") {
-        sevenz::extract_7z(file, options)?;
-    } else if file_name_lower.ends_with(".rar") {
-        rar::extract_rar(file_path, options)?;
-    } else if file_name_lower.ends_with(".cab") {
-        cab::extract_cab(file_path, options)?;
-    } else if file_name_lower.ends_with(".ar") || file_name_lower.ends_with(".a") {
-        ar::extract_ar(file_path, options)?;
-    } else if file_name_lower.ends_with(".cpio") {
-        cpio::extract_cpio(file_path, options)?;
-    } else if file_name_lower.ends_with(".iso") {
-        iso::extract_iso(file_path, options)?;
-    } else if file_name_lower.ends_with(".xar") {
-        xar::extract_xar(file_path, options)?;
-    } else if file_name_lower.ends_with(".lha") || file_name_lower.ends_with(".lzh") {
-        lha::extract_lha(file_path, options)?;
-    } else if file_name_lower.ends_with(".tar") {
-        tar::extract_tar(file, options)?;
-    } else if file_name_lower.ends_with(".gz") {
-        stream::extract_stream(file, file_path, options, ".gz")?;
-    } else if file_name_lower.ends_with(".bz2") {
-        stream::extract_stream(file, file_path, options, ".bz2")?;
-    } else if file_name_lower.ends_with(".xz") {
-        stream::extract_stream(file, file_path, options, ".xz")?;
-    } else if file_name_lower.ends_with(".zst") {
-        stream::extract_stream(file, file_path, options, ".zst")?;
-    } else if file_name_lower.ends_with(".lz4") {
-        stream::extract_stream(file, file_path, options, ".lz4")?;
-    } else if file_name_lower.ends_with(".br") {
-        stream::extract_stream(file, file_path, options, ".br")?;
-    } else if file_name_lower.ends_with(".lzma") {
-        stream::extract_stream(file, file_path, options, ".lzma")?;
-    } else {
-        return Err(anyhow!(
-            "Unsupported archive format. Please use a known extension (.tar, .tar.gz, .tgz, .tar.xz, .txz, .tar.bz2, .tbz2, .tbz, .tar.lzma, .tlz, .tar.zst, .tzst, .tar.lz4, .tar.br, .zip, .7z, .rar, .cab, .ar, .a, .cpio, .iso, .xar, .lha, .lzh, .gz, .bz2, .xz, .zst, .lz4, .br, .lzma)"
-        ));
+    match fmt {
+        format::Format::TarGz => tar::extract_tar_gz(file, options),
+        format::Format::TarXz => tar::extract_tar_xz(file, options),
+        format::Format::TarBz2 => tar::extract_tar_bz2(file, options),
+        format::Format::TarLzma => tar::extract_tar_lzma(file, options),
+        format::Format::TarZst => tar::extract_tar_zst(file, options),
+        format::Format::TarLz4 => tar::extract_tar_lz4(file, options),
+        format::Format::TarBr => tar::extract_tar_br(file, options),
+        format::Format::Tar => tar::extract_tar(file, options),
+        format::Format::Zip => zip_mod::extract_zip(file, options),
+        format::Format::SevenZ => sevenz::extract_7z(file, options),
+        format::Format::Rar => rar::extract_rar(file_path, options),
+        format::Format::Cab => cab::extract_cab(file_path, options),
+        format::Format::Ar => ar::extract_ar(file_path, options),
+        format::Format::Cpio => cpio::extract_cpio(file_path, options),
+        format::Format::Iso => iso::extract_iso(file_path, options),
+        format::Format::Xar => xar::extract_xar(file_path, options),
+        format::Format::Lha | format::Format::Lzh => lha::extract_lha(file_path, options),
+        format::Format::Deb => deb::extract_deb(file_path, options),
+        format::Format::Squashfs => squashfs::extract_squashfs(file_path, options),
+        format::Format::Rpm => rpm::extract_rpm(file_path, options),
+        format::Format::TarLzo => tar::extract_tar_lzo(file, options),
+        format::Format::Gz => stream::extract_stream(file, file_path, options, ".gz"),
+        format::Format::Bz2 => stream::extract_stream(file, file_path, options, ".bz2"),
+        format::Format::Xz => stream::extract_stream(file, file_path, options, ".xz"),
+        format::Format::Zst => stream::extract_stream(file, file_path, options, ".zst"),
+        format::Format::Lz4 => stream::extract_stream(file, file_path, options, ".lz4"),
+        format::Format::Br => stream::extract_stream(file, file_path, options, ".br"),
+        format::Format::Lzma => stream::extract_stream(file, file_path, options, ".lzma"),
+        format::Format::Lzo => stream::extract_stream(file, file_path, options, ".lzo"),
     }
+}
 
-    Ok(())
+fn extract_extension(file_name_lower: &str) -> Option<&str> {
+    [
+        ".tar.gz",
+        ".tar.xz",
+        ".tar.bz2",
+        ".tar.lzma",
+        ".tar.zst",
+        ".tar.lz4",
+        ".tar.br",
+        ".tar.lzo",
+        ".tgz",
+        ".txz",
+        ".tbz2",
+        ".tbz",
+        ".tlz",
+        ".tzst",
+        ".zip",
+        ".7z",
+        ".rar",
+        ".cab",
+        ".ar",
+        ".a",
+        ".cpio",
+        ".iso",
+        ".xar",
+        ".lha",
+        ".lzh",
+        ".deb",
+        ".squashfs",
+        ".sqfs",
+        ".sfs",
+        ".snap",
+        ".rpm",
+        ".tar",
+        ".gz",
+        ".bz2",
+        ".xz",
+        ".zst",
+        ".lz4",
+        ".br",
+        ".lzma",
+        ".lzo",
+        ".pax",
+    ]
+    .into_iter()
+    .find(|ext| file_name_lower.ends_with(ext))
 }
 
 #[cfg(test)]

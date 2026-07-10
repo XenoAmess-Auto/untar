@@ -1,6 +1,6 @@
 # Supported Formats
 
-`untar` supports a broad range of archive and compression formats. Formats are detected by file extension, so archives should use the correct extension.
+`untar` supports a broad range of archive and compression formats. Most formats are detected by their magic number, so archives work even if the extension is missing or wrong. You can also force a format with `--format <FORMAT>`.
 
 ## Archive Formats
 
@@ -8,12 +8,13 @@
 |--------|--------------|-------|-------|
 | Tar | `.tar` | [tar](https://crates.io/crates/tar) | Uncompressed tar archive |
 | Gzip-compressed Tar | `.tar.gz`, `.tgz` | [tar](https://crates.io/crates/tar) + [flate2](https://crates.io/crates/flate2) | |
-| XZ-compressed Tar | `.tar.xz`, `.txz` | [tar](https://crates.io/crates/tar) + [xz2](https://crates.io/crates/xz2) | |
+| XZ-compressed Tar | `.tar.xz`, `.txz` | [tar](https://crates.io/crates/tar) + [liblzma](https://crates.io/crates/liblzma) | |
 | BZip2-compressed Tar | `.tar.bz2`, `.tbz2`, `.tbz` | [tar](https://crates.io/crates/tar) + [bzip2](https://crates.io/crates/bzip2) | |
 | LZMA-compressed Tar | `.tar.lzma`, `.tlz` | [tar](https://crates.io/crates/tar) + [lzma-rs](https://crates.io/crates/lzma-rs) | Decompressed to a temporary file before tar extraction |
 | Zstandard-compressed Tar | `.tar.zst`, `.tzst` | [tar](https://crates.io/crates/tar) + [ruzstd](https://crates.io/crates/ruzstd) | |
 | LZ4-compressed Tar | `.tar.lz4` | [tar](https://crates.io/crates/tar) + [lz4_flex](https://crates.io/crates/lz4_flex) | |
 | Brotli-compressed Tar | `.tar.br` | [tar](https://crates.io/crates/tar) + [brotli-decompressor](https://crates.io/crates/brotli-decompressor) | |
+| LZO-compressed Tar | `.tar.lzo` | [tar](https://crates.io/crates/tar) + [lzo](https://crates.io/crates/lzo) | lzop file format |
 | ZIP | `.zip` | [zip](https://crates.io/crates/zip) | Supports AES password-protected archives (`--password`) |
 | 7-Zip | `.7z` | [sevenz-rust2](https://crates.io/crates/sevenz-rust2) | Supports password-protected archives (`--password`) |
 | RAR | `.rar` | [rars](https://crates.io/crates/rars) | Decode-only |
@@ -23,6 +24,10 @@
 | ISO 9660 | `.iso` | [iso9660-rs](https://crates.io/crates/iso9660-rs) | Primary volume names; Joliet/Rock Ridge are detected but not used for filenames |
 | XAR | `.xar` | [xara](https://crates.io/crates/xara) | macOS `.pkg` payload; symlinks are skipped |
 | LHA/LZH | `.lha`, `.lzh` | [delharc](https://crates.io/crates/delharc) | Level 0-3 headers; common compression methods |
+| Debian package | `.deb` | [ar](https://crates.io/crates/ar) + [tar](https://crates.io/crates/tar) | Extracts the `data.tar.*` payload |
+| SquashFS | `.squashfs`, `.sqfs`, `.sfs`, `.snap` | [backhand](https://crates.io/crates/backhand) | gzip/xz/zstd/lz4 compressed images |
+| RPM package | `.rpm` | [rpm](https://crates.io/crates/rpm) | gzip/bzip2/xz/zstd payloads |
+| POSIX pax | `.pax` | [tar](https://crates.io/crates/tar) | Treated as a tar archive |
 
 ## Single-Stream Compression Formats
 
@@ -32,11 +37,12 @@ These formats contain exactly one compressed file. `untar` decompresses the inpu
 |--------|-----------|-------|-------|
 | Gzip | `.gz` | [flate2](https://crates.io/crates/flate2) | |
 | BZip2 | `.bz2` | [bzip2](https://crates.io/crates/bzip2) | |
-| XZ | `.xz` | [xz2](https://crates.io/crates/xz2) | |
+| XZ | `.xz` | [liblzma](https://crates.io/crates/liblzma) | |
 | Zstandard | `.zst` | [ruzstd](https://crates.io/crates/ruzstd) | |
 | LZ4 | `.lz4` | [lz4_flex](https://crates.io/crates/lz4_flex) | |
-| Brotli | `.br` | [brotli-decompressor](https://crates.io/crates/brotli-decompressor) | |
-| LZMA | `.lzma` | [lzma-rs](https://crates.io/crates/lzma-rs) | |
+| Brotli | `.br` | [brotli-decompressor](https://crates.io/crates/brotli-decompressor) | No fixed magic; extension or `--format` required |
+| LZMA | `.lzma` | [lzma-rs](https://crates.io/crates/lzma-rs) | No fixed magic; extension or `--format` required |
+| LZO/lzop | `.lzo` | [lzo](https://crates.io/crates/lzo) | |
 
 ## Explicitly Unsupported Formats
 
@@ -59,6 +65,7 @@ All formats support the following shared options:
 - `--rename-suffix <SUFFIX>`: Suffix for renamed files (default `.1`)
 - `--strip-components <N>`: Strip the first N leading path components
 - `--password <PASSWORD>`: Password for ZIP and 7-Zip archives
+- `--format <FORMAT>`: Force a format instead of auto-detecting
 
 ## Path Safety
 

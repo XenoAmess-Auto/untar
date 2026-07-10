@@ -7,9 +7,11 @@ use anyhow::{Context, Result};
 use brotli_decompressor::Decompressor;
 use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
+use liblzma::read::XzDecoder;
 use lz4_flex::frame::FrameDecoder;
 use tar::Archive;
-use xz2::read::XzDecoder;
+
+use crate::archive::lzo;
 
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
@@ -46,6 +48,10 @@ pub fn extract_tar_lz4<R: Read>(reader: R, options: &ExtractOptions) -> Result<(
 
 pub fn extract_tar_br<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
     extract_tar_reader(Decompressor::new(reader, 4096), options)
+}
+
+pub fn extract_tar_lzo<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {
+    extract_tar_reader(BufReader::new(lzo::LzopReader::new(reader)?), options)
 }
 
 pub fn extract_tar<R: Read>(reader: R, options: &ExtractOptions) -> Result<()> {

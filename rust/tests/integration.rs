@@ -122,7 +122,7 @@ fn compress_bytes(input: &[u8], kind: Compression) -> Vec<u8> {
             enc.finish().unwrap()
         }
         Compression::Xz => {
-            let mut enc = xz2::write::XzEncoder::new(Vec::new(), 6);
+            let mut enc = liblzma::write::XzEncoder::new(Vec::new(), 6);
             enc.write_all(input).unwrap();
             enc.finish().unwrap()
         }
@@ -953,4 +953,306 @@ fn extracts_nested_directories() {
         fs::read_to_string(output.join("a/b/other.txt")).unwrap(),
         "Other"
     );
+}
+
+#[test]
+fn detects_zip_renamed_as_tar_gz() {
+    let tmp = TempDir::new().unwrap();
+    let zip_path = create_zip(tmp.path(), "real.zip", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    let archive = tmp.path().join("fake.tar.gz");
+    fs::copy(&zip_path, &archive).unwrap();
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn detects_gz_stream_without_extension() {
+    let tmp = TempDir::new().unwrap();
+    let gz_path = create_stream(tmp.path(), "data.gz", b"Hello", Compression::Gz);
+    let archive = tmp.path().join("data");
+    fs::copy(&gz_path, &archive).unwrap();
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("data")).unwrap(), "Hello");
+}
+
+#[test]
+fn format_override_forces_zip() {
+    let tmp = TempDir::new().unwrap();
+    let zip_path = create_zip(tmp.path(), "real.zip", &[("a.txt", "A")]);
+    let archive = tmp.path().join("archive.txt");
+    fs::copy(&zip_path, &archive).unwrap();
+
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--format")
+        .arg("zip")
+        .arg(&archive)
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}
+
+fn create_deb(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let mut control_tar = Vec::new();
+    {
+        let mut tar = tar::Builder::new(&mut control_tar);
+        let mut header = tar::Header::new_gnu();
+        header.set_path("control").unwrap();
+        header.set_size(0);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append(&header, &[][..]).unwrap();
+        tar.finish().unwrap();
+    }
+    let control_tar_gz = compress_bytes(&control_tar, Compression::Gz);
+
+    let mut data_tar = Vec::new();
+    {
+        let mut tar = tar::Builder::new(&mut data_tar);
+        for (name, content) in files {
+            let mut header = tar::Header::new_gnu();
+            header.set_path(*name).unwrap();
+            header.set_size(content.len() as u64);
+            header.set_mode(0o644);
+            header.set_cksum();
+            tar.append(&header, content.as_bytes()).unwrap();
+        }
+        tar.finish().unwrap();
+    }
+    let data_tar_gz = compress_bytes(&data_tar, Compression::Gz);
+
+    let path = dir.join(name);
+    let mut builder = ar::Builder::new(Vec::new());
+    for (name, content) in [
+        ("debian-binary", "2.0\n".as_bytes()),
+        ("control.tar.gz", control_tar_gz.as_slice()),
+        ("data.tar.gz", data_tar_gz.as_slice()),
+    ] {
+        let mut header = ar::Header::new(name.as_bytes().to_vec(), content.len() as u64);
+        header.set_mode(0o100644);
+        builder.append(&header, content).unwrap();
+    }
+    fs::write(&path, builder.into_inner().unwrap()).unwrap();
+    path
+}
+
+fn create_squashfs(
+    dir: &std::path::Path,
+    name: &str,
+    files: &[(&str, &str)],
+) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let mut fs = backhand::FilesystemWriter::default();
+    fs.set_only_root_id();
+    fs.set_root_mode(0o755);
+    fs.set_compressor(
+        backhand::FilesystemCompressor::new(backhand::compression::Compressor::Gzip, None).unwrap(),
+    );
+
+    for (name, content) in files {
+        let file_path = std::path::Path::new(*name);
+        if let Some(parent) = file_path.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs.push_dir_all(parent, backhand::NodeHeader::new(0o755, 0, 0, 0))
+                    .unwrap();
+            }
+        }
+        fs.push_file(
+            std::io::Cursor::new(content.as_bytes()),
+            *name,
+            backhand::NodeHeader::new(0o644, 0, 0, 0),
+        )
+        .unwrap();
+    }
+
+    let mut output = File::create(&path).unwrap();
+    fs.write(&mut output).unwrap();
+    path
+}
+
+fn create_rpm(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let mut builder = rpm::PackageBuilder::new("test", "1.0.0", "MIT", "x86_64", "test package");
+    for (name, content) in files {
+        let rpm_path = if name.starts_with('/') {
+            name.to_string()
+        } else {
+            format!("/{name}")
+        };
+        builder
+            .with_file_contents(
+                content.as_bytes(),
+                rpm::FileOptions::new(rpm_path).permissions(0o644),
+            )
+            .unwrap();
+    }
+    let pkg = builder.build().unwrap();
+    pkg.write_to(&path).unwrap();
+    path
+}
+
+fn create_lzo(dir: &std::path::Path, name: &str, content: &[u8]) -> std::path::PathBuf {
+    const LZOP_MAGIC: &[u8] = b"\x89LZO\x00\r\n\x1a\n";
+    let path = dir.join(name);
+    let mut out = Vec::new();
+    out.extend_from_slice(LZOP_MAGIC);
+    let header_start = out.len();
+    out.extend_from_slice(&0x1040u16.to_be_bytes());
+    out.extend_from_slice(&0x2040u16.to_be_bytes());
+    out.extend_from_slice(&0x0940u16.to_be_bytes());
+    out.push(1); // method
+    out.push(1); // level
+    out.extend_from_slice(&0u32.to_be_bytes()); // flags
+    out.extend_from_slice(&0u32.to_be_bytes()); // mode
+    out.extend_from_slice(&0u32.to_be_bytes()); // mtime_low
+    out.extend_from_slice(&0u32.to_be_bytes()); // mtime_high
+    out.push(0); // name_len
+    let mut hasher = adler::Adler32::new();
+    hasher.write_slice(&out[header_start..]);
+    let checksum = hasher.checksum();
+    out.extend_from_slice(&checksum.to_be_bytes());
+
+    let compressed = lzokay::compress::compress(content).unwrap();
+    let stored = if compressed.len() < content.len() {
+        compressed.as_slice()
+    } else {
+        content
+    };
+    out.extend_from_slice(&(content.len() as u32).to_be_bytes());
+    out.extend_from_slice(&(stored.len() as u32).to_be_bytes());
+    out.extend_from_slice(stored);
+    out.extend_from_slice(&0u32.to_be_bytes()); // end block
+
+    fs::write(&path, out).unwrap();
+    path
+}
+
+fn create_tar_lzo(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let mut tar_buf = Vec::new();
+    {
+        let mut tar = tar::Builder::new(&mut tar_buf);
+        for (name, content) in files {
+            let mut header = tar::Header::new_gnu();
+            header.set_path(*name).unwrap();
+            header.set_size(content.len() as u64);
+            header.set_mode(0o644);
+            header.set_cksum();
+            tar.append(&header, content.as_bytes()).unwrap();
+        }
+        tar.finish().unwrap();
+    }
+    create_lzo(dir, name, &tar_buf)
+}
+
+#[test]
+fn extracts_deb() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_deb(tmp.path(), "test.deb", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_squashfs() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_squashfs(
+        tmp.path(),
+        "test.squashfs",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_rpm() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_rpm(tmp.path(), "test.rpm", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_lzo_stream() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_lzo(tmp.path(), "test.txt.lzo", b"Hello");
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("test.txt")).unwrap(),
+        "Hello"
+    );
+}
+
+#[test]
+fn extracts_tar_lzo() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_lzo(
+        tmp.path(),
+        "test.tar.lzo",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }

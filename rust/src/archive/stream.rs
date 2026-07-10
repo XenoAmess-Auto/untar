@@ -6,10 +6,11 @@ use anyhow::{anyhow, Context, Result};
 use brotli_decompressor::Decompressor;
 use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
+use liblzma::read::XzDecoder;
 use lz4_flex::frame::FrameDecoder;
 use ruzstd::decoding::StreamingDecoder;
-use xz2::read::XzDecoder;
 
+use crate::archive::lzo;
 use crate::extract::{
     format_size, print_entry, resolve_conflict, safe_output_path, should_extract,
     strip_path_components, EntryInfo, ExtractOptions, Progress,
@@ -99,6 +100,10 @@ pub fn extract_stream(
         ".lzma" => {
             lzma_rs::lzma_decompress(&mut reader, &mut target_file)?;
             0
+        }
+        ".lzo" => {
+            let mut decoder = lzo::LzopReader::new(reader)?;
+            io::copy(&mut decoder, &mut target_file)?
         }
         _ => return Err(anyhow!("Unsupported stream extension: {ext}")),
     };

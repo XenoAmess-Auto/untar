@@ -11,7 +11,7 @@ description = "Extract tar/tar.gz/tgz/tar.xz/tar.bz2/tar.zip packages"
 # Minimal tar extraction with support for compressed archives
 tar = "0.4"
 # XZ (lzma2) compression support
-xz2 = "0.1"
+liblzma = "0.4"
 # BZip2 compression support
 bzip2 = "0.6"
 # GZip compression support
@@ -45,6 +45,12 @@ gpt_disk_types = "0.16"
 xara = "0.3"
 # LHA / LZH archive support (pinned for Rust 1.65 compatibility)
 delharc = "0.6.2"
+# SquashFS image support
+backhand = { version = "0.25", default-features = false, features = ["gzip", "xz", "zstd", "lz4"] }
+# RPM package support
+rpm = { version = "0.25", default-features = false, features = ["payload", "gzip-compression", "bzip2-compression", "xz-compression", "zstd-compression"] }
+# LZO1X decompression for .lzo / .tar.lzo
+lzo = "0.1"
 
 # Use anyhow for error handling (minimal overhead)
 anyhow = "1.0"
@@ -62,6 +68,8 @@ predicates = "3"
 # Test encoders for formats without Rust Write wrappers in [dependencies]
 zstd = "0.13"
 brotli = "7"
+lzokay = "2"
+adler = "1"
 
 [build-dependencies]
 clap = { version = "4.6", features = ["derive"] }

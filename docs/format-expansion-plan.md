@@ -35,7 +35,7 @@ All new TAR variants reuse the existing path-safety, pattern, strip-components, 
 Add a new module `archive/stream.rs` to handle single-file compressed inputs:
 - `.gz` (via `flate2`)
 - `.bz2` (via `bzip2`)
-- `.xz` (via `xz2`)
+- `.xz` (via `liblzma`)
 - `.zst` (via `ruzstd`)
 - `.lz4` (via `lz4_flex`)
 - `.br` (via `brotli-decompressor`)

@@ -195,7 +195,7 @@ untar/
 
 - [tar](https://crates.io/crates/tar) 0.4 - Tar 归档处理
 - [flate2](https://crates.io/crates/flate2) 1.1 - GZip 压缩支持
-- [xz2](https://crates.io/crates/xz2) 0.1 - XZ 压缩支持
+- [liblzma](https://crates.io/crates/liblzma) 0.4 - XZ 压缩支持
 - [bzip2](https://crates.io/crates/bzip2) 0.6 - BZip2 压缩支持
 - [zip](https://crates.io/crates/zip) 7 - ZIP 归档支持
 - [clap](https://crates.io/crates/clap) 4.5 - 命令行参数解析
