@@ -7,6 +7,12 @@ use clap_complete::Shell;
 include!("src/cli.rs");
 
 fn main() {
+    let target = env::var("TARGET").expect("TARGET not set");
+    if target.contains("windows") {
+        // unrar_sys needs these Windows system libraries on MSVC.
+        println!("cargo:rustc-link-lib=advapi32");
+    }
+
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
     let mut cmd = Args::command();
 
