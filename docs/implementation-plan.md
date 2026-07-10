@@ -102,8 +102,19 @@ Password-protected ZIP, 7z, and RAR are already supported, but the CLI help/docs
 
 ## Phase 4: Password Cracker
 
+**Status: completed**
+
 ### Why
 Users sometimes receive a password-protected archive but do not know the password. A built-in recovery mode provides a fallback without forcing the user to install external tools first.
+
+### What was done
+- Embedded the SecLists `xato-net-10-million-passwords.txt` wordlist as `rust/assets/default_wordlist.txt.zst` (~17 MB compressed, ~46 MB raw, 5.2 M passwords).
+- Added `--crack`, `--wordlist`, and `--extract-hash` CLI options.
+- Implemented dictionary attacks for ZIP, 7z, RAR, and ARJ in `rust/src/cracker.rs`.
+- Decompress the built-in wordlist line-by-line with `ruzstd` to keep memory usage low.
+- Added TTY prompt after a failed password extraction: "Password incorrect. Try to crack? [y/N]".
+- `--extract-hash` shells out to `zip2john`, `rar2john`, or `7z2john.pl` for ZIP, RAR, and 7z respectively.
+- Added integration tests for ZIP, 7z, and ARJ password cracking with custom wordlists.
 
 ### Scope
 
@@ -115,7 +126,7 @@ Users sometimes receive a password-protected archive but do not know the passwor
 ### Built-in wordlist
 
 - **Source**: `SecLists/Passwords/Common-Credentials/xato-net-10-million-passwords.txt` (5,189,454 unique passwords, 46.3 MB raw).
-- **Storage**: compress with zstd to ~10-15 MB as `rust/assets/default_wordlist.txt.zst` and embed with `include_bytes!`. This keeps the binary and Git repository manageable.
+- **Storage**: compressed to ~17 MB as `rust/assets/default_wordlist.txt.zst` and embedded with `include_bytes!`. This keeps the binary and Git repository manageable.
 - **Runtime**: decompress line-by-line using `ruzstd` (already a dependency) to avoid loading the full 46 MB into memory at once.
 - **Override**: `--wordlist <FILE>` always takes precedence over the built-in list.
 

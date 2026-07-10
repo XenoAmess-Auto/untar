@@ -76,6 +76,9 @@ All formats support the following shared options:
 - `--max-compression-ratio <N>`: Maximum allowed compression ratio (default `100`)
 - `--max-recursion-depth <N>`: Maximum nested-archive depth (default `3`)
 - `--allow-unsafe`: Skip security warnings and continue extraction when limits are exceeded
+- `--crack`: Try to crack the archive password with a dictionary attack
+- `--wordlist <FILE>`: Use an external wordlist file instead of the built-in SecLists dictionary
+- `--extract-hash`: Print a john/hashcat-compatible hash and exit
 
 ## Path Safety
 

@@ -91,6 +91,18 @@ pub struct Args {
     #[arg(long)]
     pub allow_unsafe: bool,
 
+    /// Try to crack a password-protected archive using a dictionary attack.
+    #[arg(long)]
+    pub crack: bool,
+
+    /// Use an external wordlist file instead of the built-in dictionary.
+    #[arg(long, value_name = "FILE")]
+    pub wordlist: Option<String>,
+
+    /// Print a john/hashcat-compatible hash for the archive and exit.
+    #[arg(long)]
+    pub extract_hash: bool,
+
     /// Archive file to extract.
     #[arg(value_name = "FILE", index = 1)]
     pub file: Option<String>,

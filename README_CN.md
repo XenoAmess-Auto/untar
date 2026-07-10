@@ -158,6 +158,9 @@ Options:
       --max-compression-ratio <N>  最大允许压缩比 [默认：100]
       --max-recursion-depth <N>    最大嵌套归档深度 [默认：3]
       --allow-unsafe             跳过安全警告并继续解压
+      --crack                    使用字典攻击尝试破解归档密码
+      --wordlist <FILE>          外部字典文件（默认：内置 SecLists 字典）
+      --extract-hash             输出 john/hashcat 兼容的哈希并退出
   -h, --help                    显示帮助
   -V, --version                 显示版本
 ```
@@ -176,6 +179,15 @@ untar -d ./extracted backup.tar.xz
 
 # 静默解压 ZIP 文件
 untar -q archive.zip
+
+# 使用内置字典破解密码保护的归档
+untar -d ./extracted --crack secret.zip
+
+# 使用自定义字典破解
+untar -d ./extracted --crack --wordlist passwords.txt secret.7z
+
+# 导出 john/hashcat 兼容的哈希
+untar --extract-hash secret.zip
 ```
 
 ## 构建

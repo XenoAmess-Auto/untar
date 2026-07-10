@@ -188,6 +188,9 @@ Options:
       --max-compression-ratio <N>  Maximum compression ratio allowed [default: 100]
       --max-recursion-depth <N>    Maximum nested-archive depth [default: 3]
       --allow-unsafe             Skip security warnings and continue extraction
+      --crack                    Try to crack the archive password with a dictionary attack
+      --wordlist <FILE>          External wordlist file (default: built-in SecLists dictionary)
+      --extract-hash             Print a john/hashcat-compatible hash and exit
   -h, --help                    Print help
   -V, --version                 Print version
 ```
@@ -206,6 +209,15 @@ untar -d ./extracted backup.tar.xz
 
 # Extract a ZIP file quietly
 untar -q archive.zip
+
+# Crack a password-protected archive with the built-in dictionary
+untar -d ./extracted --crack secret.zip
+
+# Crack with a custom wordlist
+untar -d ./extracted --crack --wordlist passwords.txt secret.7z
+
+# Export a hash for john/hashcat
+untar --extract-hash secret.zip
 ```
 
 ## Building

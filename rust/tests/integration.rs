@@ -1514,6 +1514,81 @@ fn extracts_tar_lzo() {
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
 
+fn create_wordlist(dir: &std::path::Path, name: &str, words: &[&str]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let content = words.join("\n");
+    fs::write(&path, content).unwrap();
+    path
+}
+
+#[test]
+fn cracks_password_zip_with_wordlist() {
+    let tmp = TempDir::new().unwrap();
+    let wordlist = create_wordlist(tmp.path(), "words.txt", &["wrong", "xyzzy", "nope"]);
+    let archive = create_password_zip(tmp.path(), "test.zip", "xyzzy", &[("a.txt", "A")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--crack")
+        .arg("--wordlist")
+        .arg(&wordlist)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}
+
+#[test]
+fn cracks_password_7z_with_wordlist() {
+    let tmp = TempDir::new().unwrap();
+    let wordlist = create_wordlist(tmp.path(), "words.txt", &["wrong", "secret7z", "nope"]);
+    let archive = create_password_7z(
+        tmp.path(),
+        "test.7z",
+        "secret7z",
+        &[("a.txt", "A"), ("b/c.txt", "C")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--crack")
+        .arg("--wordlist")
+        .arg(&wordlist)
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn cracks_password_arj_with_wordlist() {
+    let tmp = TempDir::new().unwrap();
+    let wordlist = create_wordlist(tmp.path(), "words.txt", &["wrong", "secret", "nope"]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--crack")
+        .arg("--wordlist")
+        .arg(&wordlist)
+        .arg("tests/fixtures/unarc/license_crypted.arj")
+        .assert()
+        .success();
+    let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs")
+        .unwrap()
+        .replace("\r\n", "\n");
+    let actual = fs::read_to_string(output.join("LICENSE"))
+        .unwrap()
+        .replace("\r\n", "\n");
+    assert_eq!(actual, expected);
+}
+
 fn create_tar_hardlink(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
     let path = dir.join(name);
     let file = File::create(&path).unwrap();

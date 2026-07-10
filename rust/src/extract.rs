@@ -571,7 +571,7 @@ pub fn extract_archive(file_path: &Path, options: &ExtractOptions) -> Result<()>
     result
 }
 
-fn extract_extension(file_name_lower: &str) -> Option<&str> {
+pub fn extract_extension(file_name_lower: &str) -> Option<&str> {
     [
         ".tar.gz",
         ".tar.xz",
