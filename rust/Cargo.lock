@@ -186,9 +186,9 @@ checksum = "1e4b40c7323adcfc0a41c4b88143ed58346ff65a288fc144329c5c45e05d70c6"
 
 [[package]]
 name = "bitflags"
-version = "2.10.0"
+version = "2.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
+checksum = "b4388bee8683e3d04af747c73422af53102d2bd24d9eadb6cbc100baef4b43f8"
 
 [[package]]
 name = "bitstream-io"
@@ -685,6 +685,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3658b90877f637514897c3dcbd628e0d290bcc7fee551a398b3994ebdc62d51e"
 dependencies = [
  "bitflags",
+ "chrono",
+ "memchr",
+]
+
+[[package]]
+name = "delharc"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17e979ed4ed38829263e01880b3a1eb178319db60b5c85f6860687492cc17894"
+dependencies = [
+ "bitflags",
+ "bytemuck",
  "chrono",
  "memchr",
 ]
@@ -2030,7 +2042,7 @@ dependencies = [
  "chrono",
  "crc16",
  "crc32fast",
- "delharc",
+ "delharc 0.6.2",
  "flate2",
  "log",
  "salzweg",
@@ -2100,7 +2112,7 @@ dependencies = [
  "clap_complete",
  "clap_mangen",
  "cpio",
- "delharc",
+ "delharc 0.7.0",
  "flate2",
  "gpt_disk_io",
  "gpt_disk_types",
