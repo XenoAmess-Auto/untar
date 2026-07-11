@@ -34,7 +34,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Cache cross
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/cross
@@ -92,7 +92,7 @@ jobs:
         working-directory: ./rust
 
       - name: Cache cargo-wix
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cargo-wix
           key: ${{ runner.os }}-cargo-wix-${{ hashFiles('rust/Cargo.lock') }}
@@ -191,7 +191,7 @@ jobs:
           echo "Version: $VERSION"
 
       - name: Cache nfpm
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/go/bin/nfpm
           key: ${{ runner.os }}-nfpm
