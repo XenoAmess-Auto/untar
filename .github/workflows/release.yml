@@ -61,13 +61,13 @@ jobs:
           cd ../../..
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: untar-${{ matrix.target }}
           path: rust/target/${{ matrix.target }}/release/untar
 
       - name: Upload tar.gz
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: untar-${{ matrix.target }}-tar
           path: rust/untar-${{ matrix.target }}.tar.gz
@@ -113,13 +113,13 @@ jobs:
         shell: pwsh
 
       - name: Upload MSI
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: untar-x86_64-windows-msi
           path: rust/target/wix/*.msi
 
       - name: Upload zip
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: untar-x86_64-windows-zip
           path: rust/untar-x86_64-windows.zip
@@ -154,7 +154,7 @@ jobs:
           cp "$OUT_DIR/man"/* extras/man/
 
       - name: Upload extras
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: untar-extras
           path: extras/**/*
@@ -227,7 +227,7 @@ jobs:
           nfpm package -p archlinux -f nfpm.yaml -t "untar-${VERSION}-1-${{ steps.arch_vars.outputs.arch_arch }}.pkg.tar.zst"
 
       - name: Upload packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: untar-linux-packages-${{ matrix.arch }}
           path: |
