@@ -122,6 +122,55 @@ fn create_password_7z(
     path
 }
 
+fn lha_available() -> bool {
+    std::process::Command::new("lha")
+        .arg("--help")
+        .output()
+        .is_ok()
+}
+
+fn create_lha(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let input = dir.join("lha_input");
+    for (name, content) in files {
+        let file_path = input.join(name);
+        fs::create_dir_all(file_path.parent().unwrap()).unwrap();
+        fs::write(&file_path, content).unwrap();
+    }
+    std::process::Command::new("lha")
+        .current_dir(&input)
+        .arg("a")
+        .arg(&path)
+        .arg(".")
+        .status()
+        .expect("lha failed to create archive");
+    path
+}
+
+fn rar_available() -> bool {
+    std::process::Command::new("rar").arg("?").output().is_ok()
+}
+
+fn create_rar(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let input = dir.join("rar_input");
+    for (name, content) in files {
+        let file_path = input.join(name);
+        fs::create_dir_all(file_path.parent().unwrap()).unwrap();
+        fs::write(&file_path, content).unwrap();
+    }
+    std::process::Command::new("rar")
+        .current_dir(&input)
+        .arg("a")
+        .arg("-r")
+        .arg("-ep1")
+        .arg(&path)
+        .arg(".")
+        .status()
+        .expect("rar failed to create archive");
+    path
+}
+
 #[derive(Copy, Clone)]
 enum Compression {
     Gz,
@@ -919,6 +968,34 @@ fn extracts_cab() {
 fn extracts_xar() {
     let tmp = TempDir::new().unwrap();
     let archive = create_xar(tmp.path(), "test.xar", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    let output = tmp.path().join("out");
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_lha() {
+    if !lha_available() {
+        eprintln!("skipping extracts_lha: lha not found in PATH");
+        return;
+    }
+    let tmp = TempDir::new().unwrap();
+    let archive = create_lha(tmp.path(), "test.lha", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    let output = tmp.path().join("out");
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
+}
+
+#[test]
+fn extracts_rar() {
+    if !rar_available() {
+        eprintln!("skipping extracts_rar: rar not found in PATH");
+        return;
+    }
+    let tmp = TempDir::new().unwrap();
+    let archive = create_rar(tmp.path(), "test.rar", &[("a.txt", "A"), ("b/c.txt", "C")]);
     let output = tmp.path().join("out");
     run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
