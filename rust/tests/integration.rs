@@ -1827,6 +1827,49 @@ fn extracts_multiple_archives_to_same_dir() {
 }
 
 #[test]
+fn extracts_multiple_archives_with_auto_master() {
+    let tmp = TempDir::new().unwrap();
+    let archive1 = create_tar_gz(tmp.path(), "a.tar.gz", &[("a.txt", "A")]);
+    let archive2 = create_zip(tmp.path(), "b.zip", &[("b.txt", "B")]);
+    let output = tmp.path().join("out");
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--auto",
+        archive1.to_str().unwrap(),
+        archive2.to_str().unwrap(),
+    ]);
+    assert_eq!(
+        fs::read_to_string(output.join("a").join("a.txt")).unwrap(),
+        "A"
+    );
+    assert_eq!(
+        fs::read_to_string(output.join("b").join("b.txt")).unwrap(),
+        "B"
+    );
+}
+
+#[test]
+fn auto_dir_false_overrides_auto_master() {
+    let tmp = TempDir::new().unwrap();
+    let archive1 = create_tar_gz(tmp.path(), "a.tar.gz", &[("a.txt", "A")]);
+    let archive2 = create_zip(tmp.path(), "b.zip", &[("b.txt", "B")]);
+    let output = tmp.path().join("out");
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--auto",
+        "--auto-dir=false",
+        archive1.to_str().unwrap(),
+        archive2.to_str().unwrap(),
+    ]);
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b.txt")).unwrap(), "B");
+    assert!(!output.join("a").exists());
+    assert!(!output.join("b").exists());
+}
+
+#[test]
 fn extracts_multiple_archives_auto_dir() {
     let tmp = TempDir::new().unwrap();
     let archive1 = create_tar_gz(tmp.path(), "a.tar.gz", &[("a.txt", "A")]);

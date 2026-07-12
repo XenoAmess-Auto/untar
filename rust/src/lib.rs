@@ -25,7 +25,8 @@ pub fn run(args: Args, is_tty: bool) -> Result<()> {
 
     for file in &args.files {
         let file_path = Path::new(file);
-        let output_dir = if args.auto_dir {
+        let auto_dir = args.auto_dir.unwrap_or(args.auto);
+        let output_dir = if auto_dir {
             base_output_dir.join(extract::archive_stem(file_path))
         } else {
             base_output_dir.clone()

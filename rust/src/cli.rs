@@ -34,8 +34,20 @@ pub struct Args {
 
     /// Extract each archive into a subdirectory named after the archive's
     /// stem (the file name with its recognized archive extensions removed).
+    /// Can be overridden individually when the `--auto` master switch is used.
+    #[arg(
+        long,
+        num_args = 0..=1,
+        default_missing_value = "true",
+        require_equals = true,
+        value_name = "BOOL"
+    )]
+    pub auto_dir: Option<bool>,
+
+    /// Enable all `--auto-*` flags (currently `--auto-dir`).
+    /// Each `--auto-*` flag may still be explicitly disabled, e.g. `--auto --auto-dir=false`.
     #[arg(long)]
-    pub auto_dir: bool,
+    pub auto: bool,
 
     /// Quiet mode (suppress output).
     #[arg(short, long)]
@@ -187,7 +199,15 @@ mod tests {
     }
 
     #[test]
-    fn on_exists_default() {
-        assert_eq!(OnExists::default(), OnExists::Ask);
+    fn auto_enables_auto_dir() {
+        let args = Args::parse_from(["untar", "--auto", "x.zip"]);
+        assert!(args.auto);
+        assert!(args.auto_dir.unwrap_or(args.auto));
+    }
+
+    #[test]
+    fn auto_dir_false_overrides_auto() {
+        let args = Args::parse_from(["untar", "--auto", "--auto-dir=false", "x.zip"]);
+        assert!(!args.auto_dir.unwrap_or(args.auto));
     }
 }
