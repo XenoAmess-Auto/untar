@@ -181,3 +181,54 @@ fn run_external(name: &str, file_path: &Path) -> Result<()> {
     io::stdout().write_all(&output.stdout)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::extract::{ExtractOptions, LimitTracker};
+    use std::path::PathBuf;
+
+    fn default_options() -> ExtractOptions {
+        ExtractOptions {
+            output_dir: PathBuf::from("."),
+            quiet: true,
+            list: false,
+            on_exists: crate::cli::OnExists::Error,
+            rename_suffix: ".1".to_string(),
+            strip_components: None,
+            patterns: vec![],
+            password: None,
+            format: None,
+            limits: LimitTracker::new(10, 10, 10, 10, 10, true, false),
+            is_tty: false,
+        }
+    }
+
+    #[test]
+    fn resolve_format_for_cli_override() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        assert_eq!(
+            resolve_format_for(tmp.path(), Some("zip")).unwrap(),
+            Format::Zip
+        );
+    }
+
+    #[test]
+    fn crack_archive_unsupported_format() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let options = default_options();
+        assert!(crack_archive(tmp.path(), &options, None).is_err());
+    }
+
+    #[test]
+    fn extract_hash_unsupported_format() {
+        assert!(extract_hash(Path::new("x.tar"), Format::Tar).is_err());
+    }
+
+    #[test]
+    fn extract_hash_supported_formats() {
+        for fmt in [Format::Zip, Format::Rar, Format::SevenZ] {
+            assert!(extract_hash(Path::new("/nonexistent/file"), fmt).is_err());
+        }
+    }
+}

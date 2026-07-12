@@ -2,7 +2,7 @@ use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
 /// How to handle files that already exist in the output directory.
-#[derive(Debug, Clone, Copy, Default, ValueEnum)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum)]
 pub enum OnExists {
     /// Ask the user interactively (default in a TTY).
     #[default]
@@ -151,5 +151,43 @@ impl Args {
             .as_ref()
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("."))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_size_units() {
+        assert_eq!(parse_size("1").unwrap(), 1);
+        assert_eq!(parse_size("1B").unwrap(), 1);
+        assert_eq!(parse_size("1K").unwrap(), 1024);
+        assert_eq!(parse_size("1KB").unwrap(), 1024);
+        assert_eq!(parse_size("1M").unwrap(), 1024 * 1024);
+        assert_eq!(parse_size("1MB").unwrap(), 1024 * 1024);
+        assert_eq!(parse_size("1.5M").unwrap(), 1572864);
+        assert_eq!(parse_size("1G").unwrap(), 1024 * 1024 * 1024);
+        assert_eq!(parse_size("1GB").unwrap(), 1024 * 1024 * 1024);
+        assert_eq!(parse_size("1T").unwrap(), 1024u64 * 1024 * 1024 * 1024);
+        assert_eq!(parse_size("1TB").unwrap(), 1024u64 * 1024 * 1024 * 1024);
+    }
+
+    #[test]
+    fn parse_size_whitespace_and_underscores() {
+        assert_eq!(parse_size("1 000").unwrap(), 1000);
+        assert_eq!(parse_size("1_000").unwrap(), 1000);
+    }
+
+    #[test]
+    fn parse_size_errors() {
+        assert!(parse_size("").is_err());
+        assert!(parse_size("abc").is_err());
+        assert!(parse_size("1XB").is_err());
+    }
+
+    #[test]
+    fn on_exists_default() {
+        assert_eq!(OnExists::default(), OnExists::Ask);
     }
 }

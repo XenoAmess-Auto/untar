@@ -401,7 +401,7 @@ fn format_from_extension(ext: &str) -> Result<Format> {
         ".tar.lz4" => Ok(Format::TarLz4),
         ".tar.br" => Ok(Format::TarBr),
         ".tar" => Ok(Format::Tar),
-        ".zip" => Ok(Format::Zip),
+        ".zip" | ".apk" | ".jar" | ".war" | ".ear" => Ok(Format::Zip),
         ".7z" => Ok(Format::SevenZ),
         ".rar" => Ok(Format::Rar),
         ".cab" => Ok(Format::Cab),
@@ -432,5 +432,209 @@ fn format_from_extension(ext: &str) -> Result<Format> {
         ".lzo" => Ok(Format::Lzo),
         ".lz" => Ok(Format::Lz),
         _ => Err(anyhow!("Unknown extension: {ext}")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn from_cli_aliases() {
+        let cases = [
+            ("tar.gz", Format::TarGz),
+            ("tgz", Format::TarGz),
+            ("tar.xz", Format::TarXz),
+            ("txz", Format::TarXz),
+            ("tar.bz2", Format::TarBz2),
+            ("tbz2", Format::TarBz2),
+            ("tbz", Format::TarBz2),
+            ("tar.lzma", Format::TarLzma),
+            ("tlz", Format::TarLzma),
+            ("tar.lz", Format::TarLz),
+            ("tar.zst", Format::TarZst),
+            ("tzst", Format::TarZst),
+            ("tar.lz4", Format::TarLz4),
+            ("tar.br", Format::TarBr),
+            ("tar", Format::Tar),
+            ("zip", Format::Zip),
+            ("apk", Format::Zip),
+            ("jar", Format::Zip),
+            ("war", Format::Zip),
+            ("ear", Format::Zip),
+            ("7z", Format::SevenZ),
+            ("rar", Format::Rar),
+            ("cab", Format::Cab),
+            ("ar", Format::Ar),
+            ("a", Format::Ar),
+            ("cpio", Format::Cpio),
+            ("iso", Format::Iso),
+            ("xar", Format::Xar),
+            ("lha", Format::Lha),
+            ("lzh", Format::Lzh),
+            ("deb", Format::Deb),
+            ("squashfs", Format::Squashfs),
+            ("sqfs", Format::Squashfs),
+            ("sfs", Format::Squashfs),
+            ("snap", Format::Squashfs),
+            ("rpm", Format::Rpm),
+            ("tar.lzo", Format::TarLzo),
+            ("tar.z", Format::TarZ),
+            ("taz", Format::TarZ),
+            ("z", Format::Z),
+            ("ace", Format::Ace),
+            ("arc", Format::Arc),
+            ("pak", Format::Arc),
+            ("arj", Format::Arj),
+            ("zoo", Format::Zoo),
+            ("pax", Format::Tar),
+            ("gz", Format::Gz),
+            ("bz2", Format::Bz2),
+            ("xz", Format::Xz),
+            ("zst", Format::Zst),
+            ("lz4", Format::Lz4),
+            ("br", Format::Br),
+            ("lzma", Format::Lzma),
+            ("lzo", Format::Lzo),
+            ("lz", Format::Lz),
+        ];
+        for (s, expected) in cases {
+            assert_eq!(Format::from_cli(s).unwrap(), expected, "from_cli({s})");
+        }
+    }
+
+    #[test]
+    fn from_cli_unknown() {
+        assert!(Format::from_cli("unknown").is_err());
+    }
+
+    #[test]
+    fn format_from_extension_aliases() {
+        let cases = [
+            (".tar.gz", Format::TarGz),
+            (".tgz", Format::TarGz),
+            (".tar.xz", Format::TarXz),
+            (".txz", Format::TarXz),
+            (".tar.bz2", Format::TarBz2),
+            (".tbz2", Format::TarBz2),
+            (".tbz", Format::TarBz2),
+            (".tar.lzma", Format::TarLzma),
+            (".tlz", Format::TarLzma),
+            (".tar.lz", Format::TarLz),
+            (".tar.zst", Format::TarZst),
+            (".tzst", Format::TarZst),
+            (".tar.lz4", Format::TarLz4),
+            (".tar.br", Format::TarBr),
+            (".tar", Format::Tar),
+            (".zip", Format::Zip),
+            (".apk", Format::Zip),
+            (".jar", Format::Zip),
+            (".war", Format::Zip),
+            (".ear", Format::Zip),
+            (".7z", Format::SevenZ),
+            (".rar", Format::Rar),
+            (".cab", Format::Cab),
+            (".ar", Format::Ar),
+            (".a", Format::Ar),
+            (".cpio", Format::Cpio),
+            (".iso", Format::Iso),
+            (".xar", Format::Xar),
+            (".lha", Format::Lha),
+            (".lzh", Format::Lzh),
+            (".deb", Format::Deb),
+            (".squashfs", Format::Squashfs),
+            (".sqfs", Format::Squashfs),
+            (".sfs", Format::Squashfs),
+            (".snap", Format::Squashfs),
+            (".rpm", Format::Rpm),
+            (".tar.lzo", Format::TarLzo),
+            (".tar.z", Format::TarZ),
+            (".taz", Format::TarZ),
+            (".z", Format::Z),
+            (".ace", Format::Ace),
+            (".arc", Format::Arc),
+            (".pak", Format::Arc),
+            (".arj", Format::Arj),
+            (".zoo", Format::Zoo),
+            (".pax", Format::Tar),
+            (".gz", Format::Gz),
+            (".bz2", Format::Bz2),
+            (".xz", Format::Xz),
+            (".zst", Format::Zst),
+            (".lz4", Format::Lz4),
+            (".br", Format::Br),
+            (".lzma", Format::Lzma),
+            (".lzo", Format::Lzo),
+            (".lz", Format::Lz),
+        ];
+        for (ext, expected) in cases {
+            assert_eq!(format_from_extension(ext).unwrap(), expected, "{ext}");
+        }
+    }
+
+    #[test]
+    fn format_from_extension_unknown() {
+        assert!(format_from_extension(".unknown").is_err());
+    }
+
+    #[test]
+    fn detect_format_empty_file() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        assert!(detect_format(tmp.path(), None).is_err());
+    }
+
+    #[test]
+    fn detect_format_missing_file() {
+        assert!(detect_format(Path::new("/nonexistent/untar/file"), None).is_err());
+    }
+
+    #[test]
+    fn detect_format_zip() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        fs::write(tmp.path(), b"PK\x03\x04").unwrap();
+        assert_eq!(detect_format(tmp.path(), None).unwrap(), Format::Zip);
+    }
+
+    #[test]
+    fn detect_format_7z() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        fs::write(tmp.path(), b"7z\xbc\xaf\x27\x1c").unwrap();
+        assert_eq!(detect_format(tmp.path(), None).unwrap(), Format::SevenZ);
+    }
+
+    #[test]
+    fn detect_format_tar_gz_from_extension() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        fs::write(tmp.path(), b"\x1f\x8b").unwrap();
+        assert_eq!(
+            detect_format(tmp.path(), Some(".tar.gz")).unwrap(),
+            Format::TarGz
+        );
+    }
+
+    #[test]
+    fn detect_format_gz_stream_from_extension() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        fs::write(tmp.path(), b"\x1f\x8b").unwrap();
+        assert_eq!(detect_format(tmp.path(), Some(".gz")).unwrap(), Format::Gz);
+    }
+
+    #[test]
+    fn resolve_format_cli_override() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        assert_eq!(
+            resolve_format(tmp.path(), Some("zip"), "").unwrap(),
+            Format::Zip
+        );
+    }
+
+    #[test]
+    fn resolve_format_fallback_to_extension() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        assert_eq!(
+            resolve_format(tmp.path(), None, ".zip").unwrap(),
+            Format::Zip
+        );
     }
 }

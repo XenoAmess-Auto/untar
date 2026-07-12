@@ -1738,3 +1738,138 @@ fn limits_are_per_archive() {
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b.txt")).unwrap(), "B");
 }
+
+#[test]
+fn quiet_mode_suppresses_done_message() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(tmp.path(), "test.tar.gz", &[("a.txt", "A")]);
+    let output = tmp.path().join("out");
+    run_untar([
+        "-q",
+        "-d",
+        output.to_str().unwrap(),
+        archive.to_str().unwrap(),
+    ]);
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}
+
+#[test]
+fn auto_dir_with_unknown_extension() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar(tmp.path(), "myarchive", &[("a.txt", "A")]);
+    let output = tmp.path().join("out");
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--auto-dir",
+        "--format",
+        "tar",
+        archive.to_str().unwrap(),
+    ]);
+    assert_eq!(
+        fs::read_to_string(output.join("myarchive").join("a.txt")).unwrap(),
+        "A"
+    );
+}
+
+#[test]
+fn overwrites_existing_files() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(tmp.path(), "test.tar.gz", &[("hello.txt", "NEW")]);
+    let output = tmp.path().join("out");
+    fs::create_dir_all(&output).unwrap();
+    fs::write(output.join("hello.txt"), "OLD").unwrap();
+
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--on-exists=overwrite",
+        archive.to_str().unwrap(),
+    ]);
+    assert_eq!(fs::read_to_string(output.join("hello.txt")).unwrap(), "NEW");
+}
+
+#[test]
+fn errors_on_existing_files() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(tmp.path(), "test.tar.gz", &[("hello.txt", "NEW")]);
+    let output = tmp.path().join("out");
+    fs::create_dir_all(&output).unwrap();
+    fs::write(output.join("hello.txt"), "OLD").unwrap();
+
+    let result = std::panic::catch_unwind(|| {
+        run_untar([
+            "-d",
+            output.to_str().unwrap(),
+            "--on-exists=error",
+            archive.to_str().unwrap(),
+        ]);
+    });
+    assert!(result.is_err());
+}
+
+#[test]
+fn lists_zip_contents() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip(tmp.path(), "test.zip", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    run_untar(["--list", archive.to_str().unwrap()]);
+}
+
+#[test]
+fn pattern_filtering_zip() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip(
+        tmp.path(),
+        "test.zip",
+        &[("keep.txt", "KEEP"), ("drop.txt", "DROP")],
+    );
+    let output = tmp.path().join("out");
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        archive.to_str().unwrap(),
+        "--pattern",
+        "keep.txt",
+    ]);
+    assert_eq!(fs::read_to_string(output.join("keep.txt")).unwrap(), "KEEP");
+    assert!(!output.join("drop.txt").exists());
+}
+
+#[test]
+fn strip_components_zip() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip(
+        tmp.path(),
+        "test.zip",
+        &[("a/b/c.txt", "C"), ("a/b/d.txt", "D")],
+    );
+    let output = tmp.path().join("out");
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--strip-components",
+        "2",
+        archive.to_str().unwrap(),
+    ]);
+    assert_eq!(fs::read_to_string(output.join("c.txt")).unwrap(), "C");
+    assert_eq!(fs::read_to_string(output.join("d.txt")).unwrap(), "D");
+}
+
+#[test]
+fn multiple_files_with_one_error() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(tmp.path(), "good.tar.gz", &[("a.txt", "A")]);
+    let missing = tmp.path().join("missing.tar.gz");
+    let output = tmp.path().join("out");
+
+    let result = std::panic::catch_unwind(|| {
+        run_untar([
+            "-d",
+            output.to_str().unwrap(),
+            archive.to_str().unwrap(),
+            missing.to_str().unwrap(),
+        ]);
+    });
+    assert!(result.is_err());
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}

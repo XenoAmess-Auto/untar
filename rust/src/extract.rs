@@ -656,6 +656,8 @@ pub fn archive_stem(path: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
 
     #[test]
@@ -712,5 +714,158 @@ mod tests {
             &["a/b.txt".to_string()]
         ));
         assert!(!should_extract(Path::new("c/d.txt"), &["a".to_string()]));
+    }
+
+    #[test]
+    fn test_limit_tracker_allow_unsafe() {
+        let tracker = LimitTracker::new(100, 100, 100, 100, 100, true, false);
+        tracker.record_entry(200).unwrap();
+        tracker.record_written(200).unwrap();
+        tracker.check_ratio(1, 200).unwrap();
+        tracker.enter_archive().unwrap();
+    }
+
+    #[test]
+    fn test_limit_tracker_prompt_non_tty() {
+        assert!(!LimitTracker::prompt("test", false).unwrap());
+    }
+
+    #[test]
+    fn test_limit_tracker_entry_count_exceeds() {
+        let tracker = LimitTracker::new(100, 100, 1, 100, 100, false, false);
+        assert!(tracker.record_entry(1).is_ok());
+        assert!(tracker.record_entry(1).is_err());
+    }
+
+    #[test]
+    fn test_limit_tracker_entry_size_exceeds() {
+        let tracker = LimitTracker::new(100, 5, 100, 100, 100, false, false);
+        assert!(tracker.record_entry(10).is_err());
+    }
+
+    #[test]
+    fn test_limit_tracker_total_written_exceeds() {
+        let tracker = LimitTracker::new(10, 100, 100, 100, 100, false, false);
+        assert!(tracker.record_written(5).is_ok());
+        assert!(tracker.record_written(10).is_err());
+    }
+
+    #[test]
+    fn test_limit_tracker_compression_ratio_exceeds() {
+        let tracker = LimitTracker::new(100, 100, 100, 10, 100, false, false);
+        assert!(tracker.check_ratio(0, 100).is_ok());
+        assert!(tracker.check_ratio(1, 100).is_err());
+    }
+
+    #[test]
+    fn test_limit_tracker_recursion_depth_exceeds() {
+        let tracker = LimitTracker::new(100, 100, 100, 100, 1, false, false);
+        tracker.enter_archive().unwrap();
+        assert!(tracker.enter_archive().is_err());
+    }
+
+    #[test]
+    fn test_limit_tracker_exit_archive() {
+        let tracker = LimitTracker::new(100, 100, 100, 100, 100, false, false);
+        tracker.enter_archive().unwrap();
+        tracker.exit_archive();
+    }
+
+    #[test]
+    fn test_resolve_conflict_overwrite() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("file.txt");
+        fs::write(&path, "old").unwrap();
+        let result = resolve_conflict(&path, OnExists::Overwrite, ".1", false).unwrap();
+        assert_eq!(result, Some(path));
+    }
+
+    #[test]
+    fn test_resolve_conflict_skip() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("file.txt");
+        fs::write(&path, "old").unwrap();
+        let result = resolve_conflict(&path, OnExists::Skip, ".1", false).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_resolve_conflict_error() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("file.txt");
+        fs::write(&path, "old").unwrap();
+        assert!(resolve_conflict(&path, OnExists::Error, ".1", false).is_err());
+    }
+
+    #[test]
+    fn test_resolve_conflict_rename() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("file.txt");
+        fs::write(&path, "old").unwrap();
+        let result = resolve_conflict(&path, OnExists::Rename, ".1", false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(result, tmp.path().join("file.txt.1"));
+    }
+
+    #[test]
+    fn test_resolve_conflict_rename_counter() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("file.txt");
+        fs::write(&path, "old").unwrap();
+        fs::write(tmp.path().join("file.txt.1"), "old").unwrap();
+        let result = resolve_conflict(&path, OnExists::Rename, ".1", false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(result, tmp.path().join("file.txt.1.2"));
+    }
+
+    #[test]
+    fn test_validate_symlink_target_absolute() {
+        let tmp = tempfile::tempdir().unwrap();
+        let out = tmp.path().join("out");
+        fs::create_dir(&out).unwrap();
+        assert!(validate_symlink_target(&out, &out, Path::new("/etc/passwd")).is_err());
+    }
+
+    #[test]
+    fn test_validate_symlink_target_inside() {
+        let tmp = tempfile::tempdir().unwrap();
+        let out = tmp.path().join("out");
+        let parent = out.join("dir");
+        fs::create_dir_all(&parent).unwrap();
+        assert!(validate_symlink_target(&out, &parent, Path::new("../file.txt")).is_ok());
+    }
+
+    #[test]
+    fn test_validate_symlink_target_escapes() {
+        let tmp = tempfile::tempdir().unwrap();
+        let out = tmp.path().join("out");
+        let parent = out.join("dir");
+        fs::create_dir_all(&parent).unwrap();
+        assert!(validate_symlink_target(&out, &parent, Path::new("../../file.txt")).is_err());
+    }
+
+    #[test]
+    fn test_validate_symlink_target_parent_outside() {
+        let tmp = tempfile::tempdir().unwrap();
+        let out = tmp.path().join("out");
+        let outside = tmp.path().join("outside");
+        fs::create_dir_all(&out).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        assert!(validate_symlink_target(&out, &outside, Path::new("file.txt")).is_err());
+    }
+
+    #[test]
+    fn test_archive_stem() {
+        assert_eq!(
+            archive_stem(Path::new("archive.tar.gz")),
+            "archive".to_string()
+        );
+        assert_eq!(
+            archive_stem(Path::new("archive.zip")),
+            "archive".to_string()
+        );
+        assert_eq!(archive_stem(Path::new("archive")), "archive".to_string());
     }
 }
