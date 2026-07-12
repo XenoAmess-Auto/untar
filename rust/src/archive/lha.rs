@@ -38,6 +38,14 @@ pub fn extract_lha(file_path: &Path, options: &ExtractOptions) -> Result<()> {
             }
         };
 
+        // Skip the current-directory entry that some LHA encoders emit.
+        if path.as_os_str().is_empty() || path == Path::new(".") {
+            if !reader.next_file()? {
+                break;
+            }
+            continue;
+        }
+
         if !should_extract(&path, &options.patterns) {
             if !reader.next_file()? {
                 break;
