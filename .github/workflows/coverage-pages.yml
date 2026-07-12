@@ -1,0 +1,64 @@
+name: Coverage Pages
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master, main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Coverage to GitHub Pages
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rust-coverage-${{ github.event.workflow_run.head_sha }}
+          path: ./coverage
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate coverage badge JSON and pages
+        run: |
+          mkdir -p pages/rust
+          python3 - <<'PY'
+          import json
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse('coverage/cobertura.xml').getroot()
+          rate = float(root.get('line-rate', '0'))
+          pct = round(rate * 100)
+          color = 'green' if pct >= 80 else 'yellow' if pct >= 60 else 'red'
+
+          with open('pages/coverage-rust.json', 'w') as f:
+              json.dump({
+                  "schemaVersion": 1,
+                  "label": "rust coverage",
+                  "message": f"{pct}%",
+                  "color": color
+              }, f)
+          PY
+          cp coverage/tarpaulin-report.html pages/rust/coverage.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

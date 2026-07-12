@@ -4,6 +4,7 @@
 [![Rust](https://img.shields.io/badge/Rust-latest%20stable-orange.svg)](https://www.rust-lang.org/)
 [![CI](https://github.com/XenoAmess-Auto/untar/actions/workflows/ci.yml/badge.svg)](https://github.com/XenoAmess-Auto/untar/actions)
 [![Release](https://github.com/XenoAmess-Auto/untar/actions/workflows/release.yml/badge.svg)](https://github.com/XenoAmess-Auto/untar/releases)
+[![Coverage](https://img.shields.io/endpoint?url=https://xenoamess-auto.github.io/untar/coverage-rust.json)](https://xenoamess-auto.github.io/untar/rust/coverage.html)
 
 English | [中文版](README_CN.md)
 
