@@ -1460,6 +1460,107 @@ fn create_tar_symlink_outside(dir: &std::path::Path, name: &str) -> std::path::P
     path
 }
 
+fn create_tar_symlink_inside(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut tar = tar::Builder::new(file);
+    let mut header = tar::Header::new_gnu();
+    header.set_entry_type(tar::EntryType::Symlink);
+    header.set_size(0);
+    header.set_path("dir/link.txt").unwrap();
+    header.set_link_name("target.txt").unwrap();
+    header.set_cksum();
+    tar.append(&header, &[][..]).unwrap();
+    // Add the target file as well.
+    let mut target_header = tar::Header::new_gnu();
+    target_header.set_path("dir/target.txt").unwrap();
+    target_header.set_size(5);
+    target_header.set_mode(0o644);
+    target_header.set_cksum();
+    tar.append(&target_header, b"hello".as_slice()).unwrap();
+    tar.finish().unwrap();
+    path
+}
+
+fn create_tar_directory_entry(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut tar = tar::Builder::new(file);
+    let mut header = tar::Header::new_gnu();
+    header.set_entry_type(tar::EntryType::Directory);
+    header.set_size(0);
+    header.set_path("empty_dir/").unwrap();
+    header.set_mode(0o755);
+    header.set_cksum();
+    tar.append(&header, &[][..]).unwrap();
+    tar.finish().unwrap();
+    path
+}
+
+fn create_zip_with_directory_entry(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    zip.add_directory("empty_dir/", options).unwrap();
+    zip.start_file("a.txt", options).unwrap();
+    zip.write_all(b"A").unwrap();
+    zip.finish().unwrap();
+    path
+}
+
+fn create_7z_with_directory_entry(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let input = dir.join("7z_input");
+    fs::create_dir_all(input.join("empty_dir")).unwrap();
+    fs::write(input.join("a.txt"), "A").unwrap();
+    sevenz_rust2::compress_to_path(&input, &path).unwrap();
+    path
+}
+
+fn create_7z_with_files(
+    dir: &std::path::Path,
+    name: &str,
+    files: &[(&str, &str)],
+) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let input = dir.join("7z_input");
+    for (name, content) in files {
+        let file_path = input.join(name);
+        fs::create_dir_all(file_path.parent().unwrap()).unwrap();
+        fs::write(&file_path, content).unwrap();
+    }
+    sevenz_rust2::compress_to_path(&input, &path).unwrap();
+    path
+}
+
+fn create_zip_with_strip_and_pattern(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    zip.start_file("a/b/c.txt", options).unwrap();
+    zip.write_all(b"C").unwrap();
+    zip.start_file("a/b/d.txt", options).unwrap();
+    zip.write_all(b"D").unwrap();
+    zip.finish().unwrap();
+    path
+}
+
+fn create_zip_with_skip_conflict(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    zip.start_file("hello.txt", options).unwrap();
+    zip.write_all(b"NEW").unwrap();
+    zip.finish().unwrap();
+    path
+}
+
 fn create_zip_bomb(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
     let path = dir.join(name);
     let file = File::create(&path).unwrap();
@@ -1949,4 +2050,167 @@ fn multiple_files_with_one_error() {
     });
     assert!(result.is_err());
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}
+
+#[test]
+fn extracts_tar_symlink_inside() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_symlink_inside(tmp.path(), "symlink.tar");
+    let output = tmp.path().join("out");
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
+    assert_eq!(
+        fs::read_to_string(output.join("dir").join("target.txt")).unwrap(),
+        "hello"
+    );
+    #[cfg(unix)]
+    {
+        let link = output.join("dir").join("link.txt");
+        assert!(link.symlink_metadata().unwrap().file_type().is_symlink());
+        assert_eq!(
+            fs::read_link(&link).unwrap(),
+            std::path::PathBuf::from("target.txt")
+        );
+    }
+}
+
+#[test]
+fn extracts_tar_directory_entry() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_directory_entry(tmp.path(), "dir.tar");
+    let output = tmp.path().join("out");
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
+    assert!(output.join("empty_dir").is_dir());
+}
+
+#[test]
+fn lists_tar_contents() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar(tmp.path(), "test.tar", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    run_untar(["--list", archive.to_str().unwrap()]);
+}
+
+#[test]
+fn extracts_zip_directory_entry() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip_with_directory_entry(tmp.path(), "dir.zip");
+    let output = tmp.path().join("out");
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
+    assert!(output.join("empty_dir").is_dir());
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}
+
+#[test]
+fn lists_zip_contents_detailed() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip(tmp.path(), "test.zip", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    run_untar(["--list", archive.to_str().unwrap()]);
+}
+
+#[test]
+fn skips_existing_zip_file() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip_with_skip_conflict(tmp.path(), "test.zip");
+    let output = tmp.path().join("out");
+    fs::create_dir_all(&output).unwrap();
+    fs::write(output.join("hello.txt"), "OLD").unwrap();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--on-exists=skip",
+        archive.to_str().unwrap(),
+    ]);
+    assert_eq!(fs::read_to_string(output.join("hello.txt")).unwrap(), "OLD");
+}
+
+#[test]
+fn extracts_7z_directory_entry() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_7z_with_directory_entry(tmp.path(), "dir.7z");
+    let output = tmp.path().join("out");
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
+    assert!(output.join("empty_dir").is_dir());
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}
+
+#[test]
+fn lists_7z_contents() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_7z_with_files(tmp.path(), "test.7z", &[("a.txt", "A"), ("b/c.txt", "C")]);
+    run_untar(["--list", archive.to_str().unwrap()]);
+}
+
+#[test]
+fn strip_and_pattern_7z() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_7z_with_files(
+        tmp.path(),
+        "test.7z",
+        &[("a/b/c.txt", "C"), ("a/b/d.txt", "D"), ("a/x.txt", "X")],
+    );
+    let output = tmp.path().join("out");
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--strip-components",
+        "1",
+        "--pattern",
+        "b",
+        archive.to_str().unwrap(),
+    ]);
+    assert_eq!(
+        fs::read_to_string(output.join("b").join("c.txt")).unwrap(),
+        "C"
+    );
+    assert_eq!(
+        fs::read_to_string(output.join("b").join("d.txt")).unwrap(),
+        "D"
+    );
+    assert!(!output.join("x.txt").exists());
+}
+
+#[test]
+fn crack_fails_with_bad_password() {
+    let tmp = TempDir::new().unwrap();
+    let wordlist = create_wordlist(tmp.path(), "words.txt", &["wrong", "nope"]);
+    let archive = create_password_zip(tmp.path(), "test.zip", "secret", &[("a.txt", "A")]);
+    let output = tmp.path().join("out");
+    let result = std::panic::catch_unwind(|| {
+        run_untar([
+            "-d",
+            output.to_str().unwrap(),
+            "--crack",
+            "--wordlist",
+            wordlist.to_str().unwrap(),
+            archive.to_str().unwrap(),
+        ]);
+    });
+    assert!(result.is_err());
+}
+
+#[test]
+fn extract_hash_requires_external_tool() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_zip(tmp.path(), "test.zip", &[("a.txt", "A")]);
+    let result = std::panic::catch_unwind(|| {
+        run_untar(["--extract-hash", archive.to_str().unwrap()]);
+    });
+    assert!(result.is_err());
+}
+
+#[test]
+fn main_fails_with_missing_file() {
+    let mut cmd = Command::cargo_bin("untar").unwrap();
+    cmd.arg("/nonexistent/archive.zip")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Cannot open file"));
+}
+
+#[test]
+fn main_fails_without_arguments() {
+    Command::cargo_bin("untar")
+        .unwrap()
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No archive file specified"));
 }

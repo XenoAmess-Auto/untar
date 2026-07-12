@@ -868,4 +868,12 @@ mod tests {
         );
         assert_eq!(archive_stem(Path::new("archive")), "archive".to_string());
     }
+
+    #[test]
+    fn test_limited_writer_entry_size_cap() {
+        let tracker = LimitTracker::new(100, 5, 100, 100, 100, false, false);
+        let mut buf = Vec::new();
+        let mut writer = LimitedWriter::new(&mut buf, tracker);
+        assert!(writer.write_all(b"hello world").is_err());
+    }
 }
