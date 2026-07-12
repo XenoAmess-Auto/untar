@@ -32,6 +32,11 @@ pub struct Args {
     #[arg(short = 'd', long, value_name = "DIR")]
     pub directory: Option<String>,
 
+    /// Extract each archive into a subdirectory named after the archive's
+    /// stem (the file name with its recognized archive extensions removed).
+    #[arg(long)]
+    pub auto_dir: bool,
+
     /// Quiet mode (suppress output).
     #[arg(short, long)]
     pub quiet: bool,
@@ -103,12 +108,12 @@ pub struct Args {
     #[arg(long)]
     pub extract_hash: bool,
 
-    /// Archive file to extract.
-    #[arg(value_name = "FILE", index = 1)]
-    pub file: Option<String>,
+    /// Archive file(s) to extract or list.
+    #[arg(value_name = "FILES", index = 1, num_args = 1..)]
+    pub files: Vec<String>,
 
-    /// Patterns of files/paths to extract.
-    #[arg(value_name = "PATTERNS", index = 2, num_args = 0..)]
+    /// Only extract entries whose path matches one of these patterns.
+    #[arg(long = "pattern", value_name = "PATTERN")]
     pub patterns: Vec<String>,
 }
 
@@ -146,10 +151,5 @@ impl Args {
             .as_ref()
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("."))
-    }
-
-    /// Resolve the archive file path.
-    pub fn archive_file(&self) -> Option<String> {
-        self.file.clone()
     }
 }

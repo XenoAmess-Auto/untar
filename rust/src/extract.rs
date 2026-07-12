@@ -633,6 +633,27 @@ pub fn extract_extension(file_name_lower: &str) -> Option<&str> {
     .find(|ext| file_name_lower.ends_with(ext))
 }
 
+/// Return the stem of an archive path with recognized archive extensions stripped.
+///
+/// For example, `a.tar.gz` becomes `a`, `a.zip` becomes `a`, and files without a
+/// recognized archive extension keep their full file name.
+pub fn archive_stem(path: &Path) -> String {
+    let file_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or_default();
+    let file_name_lower = file_name.to_lowercase();
+    let ext = extract_extension(&file_name_lower).unwrap_or_default();
+    if ext.is_empty() {
+        return file_name.to_string();
+    }
+    let stem_len = file_name.len().saturating_sub(ext.len());
+    if stem_len == 0 {
+        return file_name.to_string();
+    }
+    file_name[..stem_len].to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

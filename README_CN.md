@@ -92,9 +92,14 @@ sudo cp target/release/untar /usr/local/bin/
 ```bash
 # 解压归档到当前目录
 untar archive.tar.gz
+untar archive1.tar.gz archive2.zip
 
 # 解压到指定目录
 untar -d /path/to/output archive.tar.gz
+
+# 每个归档解压到自己前缀名的文件夹
+untar -d /path/to/output --auto-dir archive1.tar.gz archive2.zip
+# 生成 /path/to/output/archive1/ 和 /path/to/output/archive2/
 
 # 显示帮助
 untar --help
@@ -136,14 +141,15 @@ untar --help
 ### 命令行选项
 
 ```
-Usage: untar [OPTIONS] [FILE] [PATTERNS]...
+Usage: untar [OPTIONS] [FILES]...
 
 Arguments:
-  [FILE]       要解压或列出的归档文件
-  [PATTERNS]   仅解压路径以这些模式开头的条目
+  [FILES]      要解压或列出的归档文件
 
 Options:
   -d, --directory <DIR>        解压文件到指定目录（默认：当前目录）
+      --auto-dir              每个归档解压到自己前缀名的子文件夹
+      --pattern <PATTERN>     仅解压路径匹配这些模式的条目
   -q, --quiet                 静默模式（不显示进度）
   -l, --list                  列出归档内容，不解压
   -p, --password <PASSWORD>   加密归档的密码
@@ -171,14 +177,20 @@ Options:
 # 解压 tar.gz 文件（显示进度）
 untar myproject.tar.gz
 
+# 一次解压多个归档到同一目录
+untar myproject.tar.gz assets.zip -d ./extracted
+
+# 每个归档解压到自己前缀名的文件夹
+untar myproject.tar.gz assets.zip --auto-dir -d ./extracted
+
 # 静默解压（不显示输出）
 untar -q myproject.tar.gz
 
-# 解压到指定目录
-untar -d ./extracted backup.tar.xz
-
 # 静默解压 ZIP 文件
 untar -q archive.zip
+
+# 只解压归档中匹配的路径
+untar -d ./extracted --pattern 'docs/' archive.tar.gz
 
 # 使用内置字典破解密码保护的归档
 untar -d ./extracted --crack secret.zip

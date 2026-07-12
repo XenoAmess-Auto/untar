@@ -580,6 +580,7 @@ fn extracts_matching_pattern() {
         .arg("-d")
         .arg(&output)
         .arg(&archive)
+        .arg("--pattern")
         .arg("keep.txt")
         .assert()
         .success();
@@ -1894,4 +1895,121 @@ fn preserves_zip_unix_permissions() {
         .permissions()
         .mode();
     assert_eq!(mode & 0o777, 0o755);
+}
+
+#[test]
+fn extracts_multiple_archives_to_same_dir() {
+    let tmp = TempDir::new().unwrap();
+    let archive1 = create_tar_gz(tmp.path(), "a.tar.gz", &[("a.txt", "A")]);
+    let archive2 = create_zip(tmp.path(), "b.zip", &[("b.txt", "B")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive1)
+        .arg(&archive2)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b.txt")).unwrap(), "B");
+}
+
+#[test]
+fn extracts_multiple_archives_auto_dir() {
+    let tmp = TempDir::new().unwrap();
+    let archive1 = create_tar_gz(tmp.path(), "a.tar.gz", &[("a.txt", "A")]);
+    let archive2 = create_zip(tmp.path(), "b.zip", &[("b.txt", "B")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--auto-dir")
+        .arg(&archive1)
+        .arg(&archive2)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("a").join("a.txt")).unwrap(),
+        "A"
+    );
+    assert_eq!(
+        fs::read_to_string(output.join("b").join("b.txt")).unwrap(),
+        "B"
+    );
+}
+
+#[test]
+fn extracts_single_archive_auto_dir() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_gz(tmp.path(), "archive.tar.gz", &[("x.txt", "X")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--auto-dir")
+        .arg(&archive)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("archive").join("x.txt")).unwrap(),
+        "X"
+    );
+}
+
+#[test]
+fn extracts_multiple_with_pattern() {
+    let tmp = TempDir::new().unwrap();
+    let archive1 = create_tar_gz(
+        tmp.path(),
+        "a.tar.gz",
+        &[("keep/a.txt", "K1"), ("drop1.txt", "D1")],
+    );
+    let archive2 = create_zip(
+        tmp.path(),
+        "b.zip",
+        &[("keep/b.txt", "K2"), ("drop2.txt", "D2")],
+    );
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--pattern")
+        .arg("keep")
+        .arg(&archive1)
+        .arg(&archive2)
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(output.join("keep").join("a.txt")).unwrap(),
+        "K1"
+    );
+    assert_eq!(
+        fs::read_to_string(output.join("keep").join("b.txt")).unwrap(),
+        "K2"
+    );
+    assert!(!output.join("drop1.txt").exists());
+    assert!(!output.join("drop2.txt").exists());
+}
+
+#[test]
+fn limits_are_per_archive() {
+    let tmp = TempDir::new().unwrap();
+    let archive1 = create_tar(tmp.path(), "a.tar", &[("a.txt", "A")]);
+    let archive2 = create_tar(tmp.path(), "b.tar", &[("b.txt", "B")]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg("--max-entry-count=1")
+        .arg(&archive1)
+        .arg(&archive2)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+    assert_eq!(fs::read_to_string(output.join("b.txt")).unwrap(), "B");
 }

@@ -110,11 +110,16 @@ sudo cp target/release/untar /usr/local/bin/
 ### Basic Usage
 
 ```bash
-# Extract archive to current directory
+# Extract archive(s) to current directory
 untar archive.tar.gz
+untar archive1.tar.gz archive2.zip
 
 # Extract to specific directory
 untar -d /path/to/output archive.tar.gz
+
+# Extract each archive into its own stem-named folder
+untar -d /path/to/output --auto-dir archive1.tar.gz archive2.zip
+# creates /path/to/output/archive1/ and /path/to/output/archive2/
 
 # Show help
 untar --help
@@ -166,14 +171,15 @@ untar --help
 ### Command Line Options
 
 ```
-Usage: untar [OPTIONS] [FILE] [PATTERNS]...
+Usage: untar [OPTIONS] [FILES]...
 
 Arguments:
-  [FILE]       Archive file to extract or list
-  [PATTERNS]   Only extract entries whose path starts with one of these patterns
+  [FILES]      Archive file(s) to extract or list
 
 Options:
   -d, --directory <DIR>        Output directory
+      --auto-dir              Extract each archive into its own stem-named subdirectory
+      --pattern <PATTERN>     Only extract entries whose path matches one of these patterns
   -q, --quiet                 Quiet mode (suppress output)
   -l, --list                  List archive contents instead of extracting
   -p, --password <PASSWORD>   Password for encrypted archives
@@ -201,14 +207,20 @@ Options:
 # Extract a tar.gz file (with progress output)
 untar myproject.tar.gz
 
+# Extract multiple archives to the same directory
+untar myproject.tar.gz assets.zip -d ./extracted
+
+# Extract each archive into its own folder
+untar myproject.tar.gz assets.zip --auto-dir -d ./extracted
+
 # Extract quietly (suppress output)
 untar -q myproject.tar.gz
 
-# Extract to a specific directory
-untar -d ./extracted backup.tar.xz
-
 # Extract a ZIP file quietly
 untar -q archive.zip
+
+# Extract only matching entries from an archive
+untar -d ./extracted --pattern 'docs/' archive.tar.gz
 
 # Crack a password-protected archive with the built-in dictionary
 untar -d ./extracted --crack secret.zip
