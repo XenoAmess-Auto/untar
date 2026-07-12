@@ -76,7 +76,7 @@ impl Format {
             "tar.z" | "taz" => Ok(Format::TarZ),
             "z" => Ok(Format::Z),
             "ace" => Ok(Format::Ace),
-            "arc" => Ok(Format::Arc),
+            "arc" | "pak" => Ok(Format::Arc),
             "arj" => Ok(Format::Arj),
             "zoo" => Ok(Format::Zoo),
             "pax" => Ok(Format::Tar),
@@ -123,7 +123,7 @@ impl Format {
             Format::TarZ => &[".tar.Z", ".taz"],
             Format::Z => &[".Z"],
             Format::Ace => &[".ace"],
-            Format::Arc => &[".arc"],
+            Format::Arc => &[".arc", ".pak"],
             Format::Arj => &[".arj"],
             Format::Zoo => &[".zoo"],
             Format::Gz => &[".gz"],
@@ -312,6 +312,9 @@ pub fn detect_format(file_path: &Path, ext_hint: Option<&str>) -> Result<Format>
     }
 
     if is_lzip(&buf) {
+        if ext == ".tlz" {
+            return Ok(Format::TarLz);
+        }
         return Ok(compressed_tar_or_stream(Format::Lz, ext));
     }
 
@@ -415,7 +418,7 @@ fn format_from_extension(ext: &str) -> Result<Format> {
         ".tar.z" | ".taz" => Ok(Format::TarZ),
         ".z" => Ok(Format::Z),
         ".ace" => Ok(Format::Ace),
-        ".arc" => Ok(Format::Arc),
+        ".arc" | ".pak" => Ok(Format::Arc),
         ".arj" => Ok(Format::Arj),
         ".zoo" => Ok(Format::Zoo),
         ".pax" => Ok(Format::Tar),

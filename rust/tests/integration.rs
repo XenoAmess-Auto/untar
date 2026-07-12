@@ -1784,3 +1784,114 @@ fn max_compression_ratio_warns() {
         .failure()
         .stderr(predicate::str::contains("Compression ratio"));
 }
+
+fn create_zip_with_permissions(
+    dir: &std::path::Path,
+    name: &str,
+    files: &[(&str, &str, u32)],
+) -> std::path::PathBuf {
+    let path = dir.join(name);
+    let file = File::create(&path).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+
+    for (name, content, mode) in files {
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated)
+            .unix_permissions(*mode);
+        zip.start_file(*name, options).unwrap();
+        zip.write_all(content.as_bytes()).unwrap();
+    }
+
+    zip.finish().unwrap();
+    path
+}
+
+#[test]
+fn extracts_pak() {
+    let tmp = TempDir::new().unwrap();
+    let arc = std::path::Path::new("tests/fixtures/unarc/store.arc");
+    let pak = tmp.path().join("test.pak");
+    fs::copy(&arc, &pak).unwrap();
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&pak)
+        .assert()
+        .success();
+    let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs")
+        .unwrap()
+        .replace("\r\n", "\n");
+    let actual = fs::read_to_string(output.join("LICENSE"))
+        .unwrap()
+        .replace("\r\n", "\n");
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn extracts_tlz_as_lzip() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "data.tar.lz",
+        &[("a.txt", "A")],
+        Compression::Lz,
+    );
+    let tlz = tmp.path().join("data.tlz");
+    fs::copy(&archive, &tlz).unwrap();
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&tlz)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}
+
+#[test]
+fn extracts_tlz_as_lzma() {
+    let tmp = TempDir::new().unwrap();
+    let archive = create_tar_compressed(
+        tmp.path(),
+        "data.tar.lzma",
+        &[("a.txt", "A")],
+        Compression::Lzma,
+    );
+    let tlz = tmp.path().join("data.tlz");
+    fs::copy(&archive, &tlz).unwrap();
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&tlz)
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
+}
+
+#[test]
+#[cfg(unix)]
+fn preserves_zip_unix_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let tmp = TempDir::new().unwrap();
+    let archive =
+        create_zip_with_permissions(tmp.path(), "perms.zip", &[("script.sh", "echo hi", 0o755)]);
+    let output = tmp.path().join("out");
+    Command::cargo_bin("untar")
+        .unwrap()
+        .arg("-d")
+        .arg(&output)
+        .arg(&archive)
+        .assert()
+        .success();
+    let mode = fs::metadata(output.join("script.sh"))
+        .unwrap()
+        .permissions()
+        .mode();
+    assert_eq!(mode & 0o777, 0o755);
+}

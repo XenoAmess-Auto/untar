@@ -22,7 +22,7 @@ pub enum OnExists {
 /// Supported archive formats include tar, tar.gz, tgz, tar.xz, txz, tar.bz2,
 /// tbz2, tbz, tar.lzma, tlz, tar.lz, tar.zst, tzst, tar.lz4, tar.br, tar.lzo,
 /// tar.Z, taz, zip, apk, jar, war, ear, 7z, rar, cab, ar, a, cpio, iso, xar,
-/// lha, lzh, deb, squashfs, sqfs, sfs, snap, rpm, ace, arc, zoo, and pax.
+/// lha, lzh, deb, squashfs, sqfs, sfs, snap, rpm, ace, arc, pak, zoo, and pax.
 /// Single-stream formats include gz, bz2, xz, zst, lz4, br, lzma, lzo, lz,
 /// and Z.
 #[derive(Parser, Debug, Clone)]
@@ -62,7 +62,7 @@ pub struct Args {
     /// Accepted values: tar.gz, tgz, tar.xz, txz, tar.bz2, tbz2, tbz, tar.lzma,
     /// tlz, tar.lz, tar.zst, tzst, tar.lz4, tar.br, tar, zip, apk, jar, war,
     /// ear, 7z, rar, cab, ar, a, cpio, iso, xar, lha, lzh, deb, squashfs,
-    /// sqfs, sfs, snap, rpm, tar.lzo, tar.z, taz, z, ace, arc, zoo, pax,
+    /// sqfs, sfs, snap, rpm, tar.lzo, tar.z, taz, z, ace, arc, pak, zoo, pax,
     /// gz, bz2, xz, zst, lz4, br, lzma, lzo, lz.
     #[arg(long = "format", value_name = "FORMAT")]
     pub format: Option<String>,
@@ -83,7 +83,7 @@ pub struct Args {
     #[arg(long, value_name = "N", default_value = "100")]
     pub max_compression_ratio: u64,
 
-    /// Maximum nested-archive depth.
+    /// Maximum nested-archive depth for `.deb` package payloads.
     #[arg(long, value_name = "N", default_value = "3")]
     pub max_recursion_depth: u32,
 

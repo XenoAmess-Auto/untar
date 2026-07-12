@@ -12,10 +12,10 @@
 ## 功能特性
 
 - 🚀 **快速轻量** - 使用 Rust 编写，经过优化的 Release 构建
-- 📦 **多种格式** - 支持 `.tar`、`.tar.gz`、`.tgz`、`.tar.xz`、`.txz`、`.tar.bz2`、`.tbz2`、`.tbz`、`.tar.lzma`、`.tlz`、`.tar.lz`、`.tar.zst`、`.tzst`、`.tar.lz4`、`.tar.br`、`.zip`、`.apk`、`.jar`、`.war`、`.ear`、`.7z`、`.rar`、`.cab`、`.ar`、`.a`、`.cpio`、`.iso`、`.xar`、`.lha`、`.lzh`、`.deb`、`.squashfs`、`.sqfs`、`.sfs`、`.snap`、`.rpm`、`.tar.Z`、`.taz`、`.Z`、`.ace`、`.arc`、`.zoo`、`.gz`、`.bz2`、`.xz`、`.lz`、`.zst`、`.lz4`、`.br`、`.lzma`
+- 📦 **多种格式** - 支持 `.tar`、`.tar.gz`、`.tgz`、`.tar.xz`、`.txz`、`.tar.bz2`、`.tbz2`、`.tbz`、`.tar.lzma`、`.tlz`、`.tar.lz`、`.tar.zst`、`.tzst`、`.tar.lz4`、`.tar.br`、`.tar.lzo`、`.zip`、`.apk`、`.jar`、`.war`、`.ear`、`.7z`、`.rar`、`.cab`、`.ar`、`.a`、`.cpio`、`.iso`、`.xar`、`.lha`、`.lzh`、`.deb`、`.squashfs`、`.sqfs`、`.sfs`、`.snap`、`.rpm`、`.tar.Z`、`.taz`、`.Z`、`.ace`、`.arc`、`.pak`、`.zoo`、`.gz`、`.bz2`、`.xz`、`.lz`、`.zst`、`.lz4`、`.br`、`.lzma`、`.lzo`、`.pax`
 - 🖥️ **跨平台** - 支持 Linux (x86_64、ARM64) 和 Windows (x86_64)
 - 🔧 **简单易用** - 直观的命令行界面
-- 💾 **保留权限** - 在解压过程中保留 Unix 文件权限
+- 💾 **保留权限** - 在归档格式本身存储权限时保留 Unix 文件权限（例如 tar、ar、cpio、rpm、squashfs、zip）
 - 📊 **进度显示** - 默认显示解压进度和文件大小（使用 `-q` 静默模式可关闭）
 
 ## 安装
@@ -25,8 +25,8 @@
 从 [Releases](https://github.com/XenoAmess-Auto/untar/releases) 页面下载预构建的二进制文件。
 
 可用构建版本：
-- `untar-x86_64-linux-musl.tar.gz` - Linux x86_64 (静态 musl)
-- `untar-aarch64-linux-musl.tar.gz` - Linux ARM64 (静态 musl)
+- `untar-x86_64-unknown-linux-musl.tar.gz` - Linux x86_64 (静态 musl)
+- `untar-aarch64-unknown-linux-musl.tar.gz` - Linux ARM64 (静态 musl)
 - `untar-x86_64-windows.zip` - Windows x86_64
 
 ### Linux 安装包
@@ -108,8 +108,8 @@ untar --help
 | Gzip | `.tar.gz`、`.tgz` | Gzip 压缩的 tar 归档 |
 | XZ | `.tar.xz`、`.txz` | XZ 压缩的 tar 归档 |
 | BZip2 | `.tar.bz2`、`.tbz2`、`.tbz` | BZip2 压缩的 tar 归档 |
-| LZMA | `.tar.lzma`、`.tlz` | LZMA 压缩的 tar 归档 |
-| LZIP | `.tar.lz` | LZIP 压缩的 tar 归档 |
+| LZMA | `.tar.lzma`、`.tlz` | LZMA 压缩的 tar 归档（`.tlz` 非 LZIP 头时） |
+| LZIP | `.tar.lz`、`.tlz` | LZIP 压缩的 tar 归档（`.tlz` 为 LZIP 头时） |
 | Zstandard | `.tar.zst`、`.tzst` | Zstandard 压缩的 tar 归档 |
 | LZ4 | `.tar.lz4` | LZ4 压缩的 tar 归档 |
 | Brotli | `.tar.br` | Brotli 压缩的 tar 归档 |
@@ -156,7 +156,7 @@ Options:
       --max-entry-size <SIZE>   单个文件最大字节数 [默认：1GB]
       --max-entry-count <N>     最大解压条目数 [默认：10000]
       --max-compression-ratio <N>  最大允许压缩比 [默认：100]
-      --max-recursion-depth <N>    最大嵌套归档深度 [默认：3]
+      --max-recursion-depth <N>    `.deb` 包内部 tar 的最大嵌套深度 [默认：3]
       --allow-unsafe             跳过安全警告并继续解压
       --crack                    使用字典攻击尝试破解归档密码
       --wordlist <FILE>          外部字典文件（默认：内置 SecLists 字典）
@@ -219,9 +219,23 @@ untar/
 │   │   ├── main.rs          # CLI 入口
 │   │   ├── cli.rs           # 参数解析
 │   │   ├── extract.rs       # 解压编排与路径安全
-│   │   └── archive/         # 归档格式实现
+│   │       └── archive/         # 归档格式实现
 │   │       ├── mod.rs
+│   │       ├── ar.rs
+│   │       ├── cab.rs
+│   │       ├── cpio.rs
+│   │       ├── deb.rs
+│   │       ├── iso.rs
+│   │       ├── lha.rs
+│   │       ├── lzo.rs
+│   │       ├── rar.rs
+│   │       ├── rpm.rs
+│   │       ├── sevenz.rs
+│   │       ├── squashfs.rs
+│   │       ├── stream.rs
 │   │       ├── tar.rs
+│   │       ├── unarc.rs
+│   │       ├── xar.rs
 │   │       └── zip.rs
 │   └── tests/
 │       └── integration.rs   # 端到端 CLI 测试
@@ -233,34 +247,6 @@ untar/
 │   └── dependabot.yml       # 自动依赖更新
 └── LICENSE、README.md       # 文档
 ```
-
-## 依赖
-
-- [tar](https://crates.io/crates/tar) 0.4 - Tar 归档处理
-- [flate2](https://crates.io/crates/flate2) 1.1 - GZip 压缩支持
-- [liblzma](https://crates.io/crates/liblzma) 0.4 - XZ 压缩支持
-- [bzip2](https://crates.io/crates/bzip2) 0.6 - BZip2 压缩支持
-- [lzma-rs](https://crates.io/crates/lzma-rs) 0.3 - LZMA 解压
-- [lzma-rust2](https://crates.io/crates/lzma-rust2) 0.16 - LZIP 解压
-- [ruzstd](https://crates.io/crates/ruzstd) 0.8 - Zstandard 解压
-- [lz4_flex](https://crates.io/crates/lz4_flex) 0.13 - LZ4 解压
-- [brotli-decompressor](https://crates.io/crates/brotli-decompressor) 5 - Brotli 解压
-- [zip](https://crates.io/crates/zip) 8 - ZIP 归档支持
-- [sevenz-rust2](https://crates.io/crates/sevenz-rust2) 0.20 - 7z 归档支持
-- [rars](https://crates.io/crates/rars) 0.4 - RAR 归档支持
-- [cab](https://crates.io/crates/cab) 0.6 - Windows Cabinet 支持
-- [ar](https://crates.io/crates/ar) 0.9 - Unix 归档支持
-- [cpio](https://crates.io/crates/cpio) 0.4 - CPIO 归档支持
-- [iso9660-rs](https://crates.io/crates/iso9660-rs) 1.0 - ISO 9660 镜像支持
-- [xara](https://crates.io/crates/xara) 0.3 - XAR 归档支持
-- [delharc](https://crates.io/crates/delharc) 0.6 - LHA/LZH 归档支持
-- [backhand](https://crates.io/crates/backhand) 0.25 - SquashFS 镜像支持
-- [rpm](https://crates.io/crates/rpm) 0.25 - RPM 软件包支持
-- [unarc-rs](https://crates.io/crates/unarc-rs) 0.6 - 传统格式（ACE、ARC、ZOO、Unix compress）
-- [lzo](https://crates.io/crates/lzo) 0.1 - LZO/lzop 解压
-- [clap](https://crates.io/crates/clap) 4.5 - 命令行参数解析
-- [anyhow](https://crates.io/crates/anyhow) 1.0 - 错误处理
-- [indicatif](https://crates.io/crates/indicatif) 0.17 - 进度显示
 
 ## 许可证
 

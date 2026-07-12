@@ -10,6 +10,20 @@ use crate::extract::{
     strip_path_components, EntryInfo, ExtractOptions, LimitedWriter, Progress,
 };
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
+fn set_unix_mode(path: &Path, mode: u32) {
+    #[cfg(unix)]
+    {
+        let _ = fs::set_permissions(path, fs::Permissions::from_mode(mode));
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (path, mode);
+    }
+}
+
 pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result<()> {
     let mut archive = ZipArchive::new(reader)?;
     let total_count = archive.len();
@@ -41,7 +55,7 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
         }
 
         let is_dir = entry.is_dir();
-        let mode = None; // zip does not expose Unix mode easily without extra features
+        let mode = entry.unix_mode();
 
         if !options.list {
             options.limits.record_entry(size)?;
@@ -72,6 +86,9 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
                 pb.set_message(format!("[{}] {}", i + 1, name));
             }
             fs::create_dir_all(&entry_path)?;
+            if let Some(m) = mode {
+                set_unix_mode(&entry_path, m);
+            }
             if let Some(ref pb) = progress {
                 pb.inc(1);
             }
@@ -104,6 +121,9 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
         let file = File::create(&target_path)?;
         let mut limited = LimitedWriter::new(file, options.limits.clone());
         io::copy(&mut entry, &mut limited)?;
+        if let Some(m) = mode {
+            set_unix_mode(&target_path, m);
+        }
         extracted_count += 1;
         if let Some(ref pb) = progress {
             pb.inc(1);

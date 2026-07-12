@@ -18,12 +18,12 @@ All previously excluded legacy formats are now implemented.
 ### Dependencies
 Add the following crates to `rust/Cargo.toml`:
 
-| Crate | Version | Use |
-|-------|---------|-----|
-| `lzma-rs` | `0.3` | `.tar.lzma` and `.lzma` (pure Rust) |
-| `ruzstd` | `0.8` | `.tar.zst` / `.tzst` and `.zst` (pure Rust) |
-| `lz4_flex` | `0.13` | `.tar.lz4` and `.lz4` (pure Rust) |
-| `brotli-decompressor` | `5` | `.tar.br` and `.br` (pure Rust, decompress only) |
+| Crate | Use |
+|-------|-----|
+| `lzma-rs` | `.tar.lzma` and `.lzma` (pure Rust) |
+| `ruzstd` | `.tar.zst` / `.tzst` and `.zst` (pure Rust) |
+| `lz4_flex` | `.tar.lz4` and `.lz4` (pure Rust) |
+| `brotli-decompressor` | `.tar.br` and `.br` (pure Rust, decompress only) |
 
 ### TAR variants to add
 - `.tar.lzma` (via `lzma-rs` decompression to a temporary file, then tar extraction)
@@ -57,14 +57,14 @@ Behavior: write the decompressed result to a file with the compressed extension 
 ### Dependencies
 Add the following crates to `rust/Cargo.toml`:
 
-| Crate | Version | Use |
-|-------|---------|-----|
-| `cab` | `0.6` | `.cab` (Windows Cabinet) |
-| `ar` | `0.9` | `.ar` (Unix archive) |
-| `cpio` | `0.4` | `.cpio` (newc/SVR4) |
-| `iso9660-rs` | `1.0` | `.iso` (ISO 9660) |
-| `xara` | `0.3` | `.xar` / macOS `.pkg` |
-| `delharc` | `0.6.2` | `.lha` / `.lzh` (pinned to 0.6.2 for Rust 1.65 compatibility) |
+| Crate | Use |
+|-------|-----|
+| `cab` | `.cab` (Windows Cabinet) |
+| `ar` | `.ar` (Unix archive) |
+| `cpio` | `.cpio` (newc/SVR4) |
+| `iso9660-rs` | `.iso` (ISO 9660) |
+| `xara` | `.xar` / macOS `.pkg` |
+| `delharc` | `.lha` / `.lzh` |
 
 ### Code changes
 Create one module per format:
@@ -84,7 +84,7 @@ Each module implements extraction using the same shared helpers (`safe_output_pa
 ### Special notes
 - `iso9660-rs` uses a custom `BlockIo` abstraction; implement a thin `File` adapter.
 - `xara` extracts to a `Vec<u8>` or `Write`; stream files directly to the output path.
-- `delharc` 0.6.2 exposes `LhaDecodeReader` which implements `Read`.
+- `delharc` exposes `LhaDecodeReader` which implements `Read`.
 
 ## Phase C: Tests
 

@@ -627,6 +627,7 @@ pub fn extract_extension(file_name_lower: &str) -> Option<&str> {
         ".lzo",
         ".lz",
         ".pax",
+        ".pak",
     ]
     .into_iter()
     .find(|ext| file_name_lower.ends_with(ext))

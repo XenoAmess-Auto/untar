@@ -12,10 +12,10 @@ A lightweight, fast command-line tool for extracting archives with support for a
 ## Features
 
 - 🚀 **Fast & Lightweight** - Written in Rust with optimized release builds
-- 📦 **Multiple Formats** - Support for `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.txz`, `.tar.bz2`, `.tbz2`, `.tbz`, `.tar.lzma`, `.tlz`, `.tar.lz`, `.tar.zst`, `.tzst`, `.tar.lz4`, `.tar.br`, `.zip`, `.apk`, `.jar`, `.war`, `.ear`, `.7z`, `.rar`, `.cab`, `.ar`, `.a`, `.cpio`, `.iso`, `.xar`, `.lha`, `.lzh`, `.deb`, `.squashfs`, `.sqfs`, `.sfs`, `.snap`, `.rpm`, `.tar.Z`, `.taz`, `.Z`, `.ace`, `.arc`, `.zoo`, `.gz`, `.bz2`, `.xz`, `.lz`, `.zst`, `.lz4`, `.br`, `.lzma`
+- 📦 **Multiple Formats** - Support for `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.txz`, `.tar.bz2`, `.tbz2`, `.tbz`, `.tar.lzma`, `.tlz`, `.tar.lz`, `.tar.zst`, `.tzst`, `.tar.lz4`, `.tar.br`, `.tar.lzo`, `.zip`, `.apk`, `.jar`, `.war`, `.ear`, `.7z`, `.rar`, `.cab`, `.ar`, `.a`, `.cpio`, `.iso`, `.xar`, `.lha`, `.lzh`, `.deb`, `.squashfs`, `.sqfs`, `.sfs`, `.snap`, `.rpm`, `.tar.Z`, `.taz`, `.Z`, `.ace`, `.arc`, `.pak`, `.zoo`, `.gz`, `.bz2`, `.xz`, `.lz`, `.zst`, `.lz4`, `.br`, `.lzma`, `.lzo`, `.pax`
 - 🖥️ **Cross-Platform** - Linux (x86_64, ARM64) and Windows (x86_64) support
 - 🔧 **Simple Usage** - Intuitive command-line interface
-- 💾 **Preserves Permissions** - Unix file permissions are preserved during extraction
+- 💾 **Preserves Permissions** - Unix file permissions are preserved during extraction where the archive format stores them (e.g., tar, ar, cpio, rpm, squashfs, zip)
 - 📊 **Progress Display** - Shows extraction progress with file sizes by default (use `-q` to suppress)
 
 ## Installation
@@ -25,8 +25,8 @@ A lightweight, fast command-line tool for extracting archives with support for a
 Pre-built binaries from the [Releases](https://github.com/XenoAmess-Auto/untar/releases) page.
 
 Available builds:
-- `untar-x86_64-linux-musl.tar.gz` - Linux x86_64 (static musl)
-- `untar-aarch64-linux-musl.tar.gz` - Linux ARM64 (static musl)
+- `untar-x86_64-unknown-linux-musl.tar.gz` - Linux x86_64 (static musl)
+- `untar-aarch64-unknown-linux-musl.tar.gz` - Linux ARM64 (static musl)
 - `untar-x86_64-windows.zip` - Windows x86_64
 
 ### Linux Packages
@@ -128,7 +128,7 @@ untar --help
 | Gzip-compressed Tar | `.tar.gz`, `.tgz` | Gzip-compressed tar archive |
 | XZ-compressed Tar | `.tar.xz`, `.txz` | XZ-compressed tar archive |
 | BZip2-compressed Tar | `.tar.bz2`, `.tbz2`, `.tbz` | BZip2-compressed tar archive |
-| LZMA-compressed Tar | `.tar.lzma`, `.tlz` | LZMA-compressed tar archive |
+| LZMA-compressed Tar | `.tar.lzma`, `.tlz` | LZMA-compressed tar archive (`.tlz` with non-LZIP header) |
 | Zstandard-compressed Tar | `.tar.zst`, `.tzst` | Zstandard-compressed tar archive |
 | LZ4-compressed Tar | `.tar.lz4` | LZ4-compressed tar archive |
 | Brotli-compressed Tar | `.tar.br` | Brotli-compressed tar archive |
@@ -146,7 +146,7 @@ untar --help
 | SquashFS | `.squashfs`, `.sqfs`, `.sfs`, `.snap` | SquashFS filesystem image |
 | RPM package | `.rpm` | RPM package (Red Hat/Fedora/openSUSE) |
 | POSIX pax | `.pax` | POSIX pax archive (handled as tar) |
-| LZIP | `.tar.lz`, `.tlz` | LZIP-compressed tar archive |
+| LZIP | `.tar.lz`, `.tlz` | LZIP-compressed tar archive (`.tlz` with LZIP header) |
 | Unix compress | `.tar.Z`, `.taz` | Unix compress (LZW) compressed tar archive |
 | ACE | `.ace` | ACE archive (decode-only) |
 | ARC/PAK | `.arc`, `.pak` | ARC/PAK archive (decode-only) |
@@ -186,7 +186,7 @@ Options:
       --max-entry-size <SIZE>   Maximum bytes per extracted file [default: 1GB]
       --max-entry-count <N>     Maximum number of entries to extract [default: 10000]
       --max-compression-ratio <N>  Maximum compression ratio allowed [default: 100]
-      --max-recursion-depth <N>    Maximum nested-archive depth [default: 3]
+      --max-recursion-depth <N>    Maximum nested-archive depth for .deb package payloads [default: 3]
       --allow-unsafe             Skip security warnings and continue extraction
       --crack                    Try to crack the archive password with a dictionary attack
       --wordlist <FILE>          External wordlist file (default: built-in SecLists dictionary)
@@ -256,12 +256,17 @@ untar/
 │   │       ├── ar.rs
 │   │       ├── cab.rs
 │   │       ├── cpio.rs
+│   │       ├── deb.rs
 │   │       ├── iso.rs
 │   │       ├── lha.rs
+│   │       ├── lzo.rs
 │   │       ├── rar.rs
+│   │       ├── rpm.rs
 │   │       ├── sevenz.rs
+│   │       ├── squashfs.rs
 │   │       ├── stream.rs
 │   │       ├── tar.rs
+│   │       ├── unarc.rs
 │   │       ├── xar.rs
 │   │       └── zip.rs
 │   └── tests/
@@ -278,34 +283,6 @@ untar/
 │   └── supported-formats.md
 └── LICENSE, README.md       # Documentation
 ```
-
-## Dependencies
-
-- [tar](https://crates.io/crates/tar) 0.4 - Tar archive handling
-- [flate2](https://crates.io/crates/flate2) 1.1 - GZip compression support
-- [liblzma](https://crates.io/crates/liblzma) 0.4 - XZ compression support
-- [bzip2](https://crates.io/crates/bzip2) 0.6 - BZip2 compression support
-- [lzma-rs](https://crates.io/crates/lzma-rs) 0.3 - LZMA decompression
-- [lzma-rust2](https://crates.io/crates/lzma-rust2) 0.16 - LZIP decompression
-- [ruzstd](https://crates.io/crates/ruzstd) 0.8 - Zstandard decompression
-- [lz4_flex](https://crates.io/crates/lz4_flex) 0.13 - LZ4 decompression
-- [brotli-decompressor](https://crates.io/crates/brotli-decompressor) 5 - Brotli decompression
-- [zip](https://crates.io/crates/zip) 8 - ZIP archive support
-- [sevenz-rust2](https://crates.io/crates/sevenz-rust2) 0.20 - 7z archive support
-- [rars](https://crates.io/crates/rars) 0.4 - RAR archive support
-- [cab](https://crates.io/crates/cab) 0.6 - Windows Cabinet support
-- [ar](https://crates.io/crates/ar) 0.9 - Unix archive support
-- [cpio](https://crates.io/crates/cpio) 0.4 - CPIO archive support
-- [iso9660-rs](https://crates.io/crates/iso9660-rs) 1.0 - ISO 9660 image support
-- [xara](https://crates.io/crates/xara) 0.3 - XAR archive support
-- [delharc](https://crates.io/crates/delharc) 0.6 - LHA/LZH archive support
-- [backhand](https://crates.io/crates/backhand) 0.25 - SquashFS image support
-- [rpm](https://crates.io/crates/rpm) 0.25 - RPM package support
-- [unarc-rs](https://crates.io/crates/unarc-rs) 0.6 - Legacy formats (ACE, ARC, ZOO, Unix compress)
-- [lzo](https://crates.io/crates/lzo) 0.1 - LZO/lzop decompression
-- [clap](https://crates.io/crates/clap) 4.6 - Command-line argument parsing
-- [anyhow](https://crates.io/crates/anyhow) 1.0 - Error handling
-- [indicatif](https://crates.io/crates/indicatif) 0.17 - Progress display
 
 ## License
 

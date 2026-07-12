@@ -10,8 +10,8 @@
 | Gzip-compressed Tar | `.tar.gz`, `.tgz` | [tar](https://crates.io/crates/tar) + [flate2](https://crates.io/crates/flate2) | |
 | XZ-compressed Tar | `.tar.xz`, `.txz` | [tar](https://crates.io/crates/tar) + [liblzma](https://crates.io/crates/liblzma) | |
 | BZip2-compressed Tar | `.tar.bz2`, `.tbz2`, `.tbz` | [tar](https://crates.io/crates/tar) + [bzip2](https://crates.io/crates/bzip2) | |
-| LZMA-compressed Tar | `.tar.lzma`, `.tlz` | [tar](https://crates.io/crates/tar) + [lzma-rs](https://crates.io/crates/lzma-rs) | Decompressed to a temporary file before tar extraction |
-| LZIP-compressed Tar | `.tar.lz`, `.tlz` | [tar](https://crates.io/crates/tar) + [lzma-rust2](https://crates.io/crates/lzma-rust2) | |
+| LZMA-compressed Tar | `.tar.lzma`, `.tlz` | [tar](https://crates.io/crates/tar) + [lzma-rs](https://crates.io/crates/lzma-rs) | Decompressed to a temporary file before tar extraction; `.tlz` with non-LZIP header |
+| LZIP-compressed Tar | `.tar.lz`, `.tlz` | [tar](https://crates.io/crates/tar) + [lzma-rust2](https://crates.io/crates/lzma-rust2) | `.tlz` with LZIP header |
 | Zstandard-compressed Tar | `.tar.zst`, `.tzst` | [tar](https://crates.io/crates/tar) + [ruzstd](https://crates.io/crates/ruzstd) | |
 | LZ4-compressed Tar | `.tar.lz4` | [tar](https://crates.io/crates/tar) + [lz4_flex](https://crates.io/crates/lz4_flex) | |
 | Brotli-compressed Tar | `.tar.br` | [tar](https://crates.io/crates/tar) + [brotli-decompressor](https://crates.io/crates/brotli-decompressor) | |
@@ -74,7 +74,7 @@ All formats support the following shared options:
 - `--max-entry-size <SIZE>`: Maximum bytes per extracted file (default `1GB`)
 - `--max-entry-count <N>`: Maximum number of entries to extract (default `10000`)
 - `--max-compression-ratio <N>`: Maximum allowed compression ratio (default `100`)
-- `--max-recursion-depth <N>`: Maximum nested-archive depth (default `3`)
+- `--max-recursion-depth <N>`: Maximum nested-archive depth for `.deb` package payloads (default `3`)
 - `--allow-unsafe`: Skip security warnings and continue extraction when limits are exceeded
 - `--crack`: Try to crack the archive password with a dictionary attack
 - `--wordlist <FILE>`: Use an external wordlist file instead of the built-in SecLists dictionary
