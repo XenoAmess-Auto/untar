@@ -90,13 +90,17 @@ pub fn extract_rpm(file_path: &Path, options: &ExtractOptions) -> Result<()> {
             continue;
         }
 
-        let target_path =
-            match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
-                .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
-            {
-                Some(p) => p,
-                None => continue,
-            };
+        let target_path = match resolve_conflict(
+            &entry_path,
+            options.on_exists,
+            &options.rename_suffix,
+            options.is_tty,
+        )
+        .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
+        {
+            Some(p) => p,
+            None => continue,
+        };
 
         if let Some(parent) = target_path.parent() {
             if !parent.exists() {

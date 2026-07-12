@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context, Result};
-use std::io::{self, IsTerminal, Write};
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -22,6 +22,7 @@ pub struct ExtractOptions {
     pub password: Option<String>,
     pub format: Option<String>,
     pub limits: LimitTracker,
+    pub is_tty: bool,
 }
 
 /// Tracks security limits during extraction and prompts the user when a limit
@@ -29,6 +30,7 @@ pub struct ExtractOptions {
 #[derive(Debug, Clone)]
 pub struct LimitTracker {
     inner: Arc<Mutex<LimitTrackerInner>>,
+    is_tty: bool,
 }
 
 #[derive(Debug)]
@@ -54,6 +56,7 @@ impl LimitTracker {
         max_compression_ratio: u64,
         max_recursion_depth: u32,
         allow_unsafe: bool,
+        is_tty: bool,
     ) -> Self {
         Self {
             inner: Arc::new(Mutex::new(LimitTrackerInner {
@@ -69,6 +72,7 @@ impl LimitTracker {
                 warned: false,
                 confirmed: false,
             })),
+            is_tty,
         }
     }
 
@@ -96,8 +100,8 @@ impl LimitTracker {
         });
     }
 
-    fn prompt(message: &str) -> Result<bool> {
-        if !is_tty() {
+    fn prompt(message: &str, is_tty: bool) -> Result<bool> {
+        if !is_tty {
             return Ok(false);
         }
         eprint!("Warning: {message}\nContinue anyway? [y/N] ");
@@ -113,7 +117,7 @@ impl LimitTracker {
             return Ok(());
         }
         self.set_warned();
-        if Self::prompt(&message)? {
+        if Self::prompt(&message, self.is_tty)? {
             self.set_confirmed();
             Ok(())
         } else {
@@ -374,6 +378,7 @@ pub fn resolve_conflict(
     output_path: &Path,
     on_exists: OnExists,
     rename_suffix: &str,
+    is_tty: bool,
 ) -> Result<Option<PathBuf>> {
     if !output_path.exists() {
         return Ok(Some(output_path.to_path_buf()));
@@ -388,7 +393,7 @@ pub fn resolve_conflict(
             Ok(Some(candidate))
         }
         OnExists::Ask => {
-            if !is_tty() {
+            if !is_tty {
                 return Err(anyhow!(
                     "File already exists and stdin is not a TTY: {}",
                     output_path.display()
@@ -439,11 +444,6 @@ fn find_rename_target(output_path: &Path, rename_suffix: &str) -> Result<PathBuf
             ));
         }
     }
-}
-
-/// Return whether stdin is connected to a terminal.
-pub fn is_tty() -> bool {
-    std::io::stdin().is_terminal()
 }
 
 /// Progress reporter for extraction.

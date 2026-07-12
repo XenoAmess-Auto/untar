@@ -1,9 +1,21 @@
 use assert_cmd::Command;
+use clap::Parser;
 use predicates::prelude::*;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 use tempfile::TempDir;
+
+fn run_untar<I, T>(args: I)
+where
+    I: IntoIterator<Item = T>,
+    T: AsRef<str>,
+{
+    let args: Vec<String> = args.into_iter().map(|s| s.as_ref().to_string()).collect();
+    let parsed =
+        untar::cli::Args::parse_from(std::iter::once("untar".to_string()).chain(args.into_iter()));
+    untar::run(parsed, false).unwrap();
+}
 
 fn create_tar_gz(dir: &std::path::Path, name: &str, files: &[(&str, &str)]) -> std::path::PathBuf {
     let path = dir.join(name);
@@ -105,15 +117,8 @@ fn create_password_7z(
         fs::create_dir_all(file_path.parent().unwrap()).unwrap();
         fs::write(&file_path, content).unwrap();
     }
-    std::process::Command::new("7z")
-        .current_dir(&input)
-        .arg("a")
-        .arg(format!("-p{password}"))
-        .arg("-mhe=on")
-        .arg(&path)
-        .arg(".")
-        .status()
-        .expect("7z failed to create password archive");
+    sevenz_rust2::compress_to_path_encrypted(&input, &path, sevenz_rust2::Password::from(password))
+        .expect("failed to create encrypted 7z archive");
     path
 }
 
@@ -332,13 +337,7 @@ fn extracts_tar() {
     );
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
 
     assert_eq!(
         fs::read_to_string(output.join("hello.txt")).unwrap(),
@@ -360,13 +359,7 @@ fn extracts_tar_xz() {
         Compression::Xz,
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -381,13 +374,7 @@ fn extracts_tar_bz2() {
         Compression::Bz2,
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -402,13 +389,7 @@ fn extracts_tar_gz() {
     );
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
 
     assert_eq!(
         fs::read_to_string(output.join("hello.txt")).unwrap(),
@@ -426,13 +407,7 @@ fn extracts_zip() {
     let archive = create_zip(tmp.path(), "test.zip", &[("a.txt", "A"), ("b/c.txt", "C")]);
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
 
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
@@ -444,13 +419,7 @@ fn extracts_apk() {
     let archive = create_zip(tmp.path(), "test.apk", &[("a.txt", "A"), ("b/c.txt", "C")]);
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
 
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
@@ -462,13 +431,7 @@ fn extracts_jar() {
     let archive = create_zip(tmp.path(), "test.jar", &[("a.txt", "A")]);
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
 
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
 }
@@ -551,15 +514,13 @@ fn strips_components() {
     );
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--strip-components")
-        .arg("2")
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--strip-components",
+        "2",
+        archive.to_str().unwrap(),
+    ]);
 
     assert_eq!(fs::read_to_string(output.join("c.txt")).unwrap(), "C");
     assert_eq!(fs::read_to_string(output.join("d.txt")).unwrap(), "D");
@@ -575,15 +536,13 @@ fn extracts_matching_pattern() {
     );
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .arg("--pattern")
-        .arg("keep.txt")
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        archive.to_str().unwrap(),
+        "--pattern",
+        "keep.txt",
+    ]);
 
     assert_eq!(fs::read_to_string(output.join("keep.txt")).unwrap(), "KEEP");
     assert!(!output.join("drop.txt").exists());
@@ -598,14 +557,12 @@ fn skips_existing_files() {
     fs::create_dir_all(&output).unwrap();
     fs::write(output.join("hello.txt"), "OLD").unwrap();
 
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--on-exists=skip")
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--on-exists=skip",
+        archive.to_str().unwrap(),
+    ]);
 
     assert_eq!(fs::read_to_string(output.join("hello.txt")).unwrap(), "OLD");
 }
@@ -619,15 +576,13 @@ fn renames_existing_files() {
     fs::create_dir_all(&output).unwrap();
     fs::write(output.join("hello.txt"), "OLD").unwrap();
 
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--on-exists=rename")
-        .arg("--rename-suffix=.new")
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--on-exists=rename",
+        "--rename-suffix=.new",
+        archive.to_str().unwrap(),
+    ]);
 
     assert_eq!(fs::read_to_string(output.join("hello.txt")).unwrap(), "OLD");
     assert_eq!(
@@ -652,13 +607,7 @@ fn extracts_7z() {
     let archive = create_7z(tmp.path(), "test.7z", &[("a.txt", "A"), ("b/c.txt", "C")]);
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
 
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
@@ -670,15 +619,13 @@ fn extracts_password_zip() {
     let archive = create_password_zip(tmp.path(), "test.zip", "secret", &[("a.txt", "A")]);
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--password")
-        .arg("secret")
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--password",
+        "secret",
+        archive.to_str().unwrap(),
+    ]);
 
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
 }
@@ -703,13 +650,7 @@ fn extracts_tar_lzma() {
         Compression::Lzma,
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -724,13 +665,7 @@ fn extracts_tar_lz() {
         Compression::Lz,
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -745,13 +680,7 @@ fn extracts_tar_zst() {
         Compression::Zst,
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -766,13 +695,7 @@ fn extracts_tar_lz4() {
         Compression::Lz4,
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -787,13 +710,7 @@ fn extracts_tar_br() {
         Compression::Br,
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -803,13 +720,7 @@ fn assert_extracts_fixture(
     output: &std::path::Path,
     expected_file: &str,
 ) {
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(output)
-        .arg(archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs")
         .unwrap()
         .replace("\r\n", "\n");
@@ -879,13 +790,7 @@ fn extracts_gz_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.gz", b"Hello", Compression::Gz);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -897,13 +802,7 @@ fn extracts_bz2_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.bz2", b"Hello", Compression::Bz2);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -915,13 +814,7 @@ fn extracts_xz_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.xz", b"Hello", Compression::Xz);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -933,13 +826,7 @@ fn extracts_zst_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.zst", b"Hello", Compression::Zst);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -951,13 +838,7 @@ fn extracts_lz4_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.lz4", b"Hello", Compression::Lz4);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -969,13 +850,7 @@ fn extracts_br_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.br", b"Hello", Compression::Br);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -987,13 +862,7 @@ fn extracts_lzma_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.lzma", b"Hello", Compression::Lzma);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -1005,13 +874,7 @@ fn extracts_lz_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_stream(tmp.path(), "test.txt.lz", b"Hello", Compression::Lz);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -1023,13 +886,7 @@ fn extracts_ar() {
     let tmp = TempDir::new().unwrap();
     let archive = create_ar(tmp.path(), "test.a", &[("a.txt", "A"), ("b/c.txt", "C")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1043,13 +900,7 @@ fn extracts_cpio() {
         &[("./a.txt", "A"), ("./b/c.txt", "C")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1059,13 +910,7 @@ fn extracts_cab() {
     let tmp = TempDir::new().unwrap();
     let archive = create_cab(tmp.path(), "test.cab", &[("a.txt", "A"), ("b/c.txt", "C")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1075,13 +920,7 @@ fn extracts_xar() {
     let tmp = TempDir::new().unwrap();
     let archive = create_xar(tmp.path(), "test.xar", &[("a.txt", "A"), ("b/c.txt", "C")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1102,13 +941,7 @@ fn extracts_iso() {
     let tmp = TempDir::new().unwrap();
     let archive = create_iso(tmp.path(), "test.iso", &[("A.TXT", "A"), ("B/C.TXT", "C")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("A.TXT")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("B/C.TXT")).unwrap(), "C");
 }
@@ -1123,15 +956,13 @@ fn extracts_password_7z() {
         &[("a.txt", "A"), ("b/c.txt", "C")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--password")
-        .arg("secret")
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--password",
+        "secret",
+        archive.to_str().unwrap(),
+    ]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1141,13 +972,7 @@ fn extracts_empty_tar_gz() {
     let tmp = TempDir::new().unwrap();
     let archive = create_tar_gz(tmp.path(), "empty.tar.gz", &[]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert!(output.exists());
 }
 
@@ -1173,13 +998,7 @@ fn extracts_unicode_filenames() {
         &[("中文.txt", "Chinese"), ("🎉.txt", "Party")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("中文.txt")).unwrap(),
         "Chinese"
@@ -1196,13 +1015,7 @@ fn extracts_nested_directories() {
         &[("a/b/c/d.txt", "Deep"), ("a/b/other.txt", "Other")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("a/b/c/d.txt")).unwrap(),
         "Deep"
@@ -1221,13 +1034,7 @@ fn detects_zip_renamed_as_tar_gz() {
     fs::copy(&zip_path, &archive).unwrap();
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
 
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
@@ -1241,13 +1048,7 @@ fn detects_gz_stream_without_extension() {
     fs::copy(&gz_path, &archive).unwrap();
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
 
     assert_eq!(fs::read_to_string(output.join("data")).unwrap(), "Hello");
 }
@@ -1260,15 +1061,13 @@ fn format_override_forces_zip() {
     fs::copy(&zip_path, &archive).unwrap();
 
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--format")
-        .arg("zip")
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--format",
+        "zip",
+        archive.to_str().unwrap(),
+    ]);
 
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
 }
@@ -1430,13 +1229,7 @@ fn extracts_deb() {
     let tmp = TempDir::new().unwrap();
     let archive = create_deb(tmp.path(), "test.deb", &[("a.txt", "A"), ("b/c.txt", "C")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1450,13 +1243,7 @@ fn extracts_squashfs() {
         &[("a.txt", "A"), ("b/c.txt", "C")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1466,13 +1253,7 @@ fn extracts_rpm() {
     let tmp = TempDir::new().unwrap();
     let archive = create_rpm(tmp.path(), "test.rpm", &[("a.txt", "A"), ("b/c.txt", "C")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1482,13 +1263,7 @@ fn extracts_lzo_stream() {
     let tmp = TempDir::new().unwrap();
     let archive = create_lzo(tmp.path(), "test.txt.lzo", b"Hello");
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(
         fs::read_to_string(output.join("test.txt")).unwrap(),
         "Hello"
@@ -1504,13 +1279,7 @@ fn extracts_tar_lzo() {
         &[("a.txt", "A"), ("b/c.txt", "C")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1528,16 +1297,14 @@ fn cracks_password_zip_with_wordlist() {
     let wordlist = create_wordlist(tmp.path(), "words.txt", &["wrong", "xyzzy", "nope"]);
     let archive = create_password_zip(tmp.path(), "test.zip", "xyzzy", &[("a.txt", "A")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--crack")
-        .arg("--wordlist")
-        .arg(&wordlist)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--crack",
+        "--wordlist",
+        wordlist.to_str().unwrap(),
+        archive.to_str().unwrap(),
+    ]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
 }
 
@@ -1552,16 +1319,14 @@ fn cracks_password_7z_with_wordlist() {
         &[("a.txt", "A"), ("b/c.txt", "C")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--crack")
-        .arg("--wordlist")
-        .arg(&wordlist)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--crack",
+        "--wordlist",
+        wordlist.to_str().unwrap(),
+        archive.to_str().unwrap(),
+    ]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b/c.txt")).unwrap(), "C");
 }
@@ -1571,16 +1336,14 @@ fn cracks_password_arj_with_wordlist() {
     let tmp = TempDir::new().unwrap();
     let wordlist = create_wordlist(tmp.path(), "words.txt", &["wrong", "secret", "nope"]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--crack")
-        .arg("--wordlist")
-        .arg(&wordlist)
-        .arg("tests/fixtures/unarc/license_crypted.arj")
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--crack",
+        "--wordlist",
+        wordlist.to_str().unwrap(),
+        "tests/fixtures/unarc/license_crypted.arj",
+    ]);
     let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs")
         .unwrap()
         .replace("\r\n", "\n");
@@ -1648,15 +1411,13 @@ fn extracts_arj() {
 fn extracts_password_arj() {
     let tmp = TempDir::new().unwrap();
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--password")
-        .arg("secret")
-        .arg("tests/fixtures/unarc/license_crypted.arj")
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--password",
+        "secret",
+        "tests/fixtures/unarc/license_crypted.arj",
+    ]);
     let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs")
         .unwrap()
         .replace("\r\n", "\n");
@@ -1757,15 +1518,13 @@ fn allow_unsafe_skips_limits() {
         &[("a.txt", "ABCD"), ("b.txt", "EFGH")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--max-entry-size=2")
-        .arg("--allow-unsafe")
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--max-entry-size=2",
+        "--allow-unsafe",
+        archive.to_str().unwrap(),
+    ]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "ABCD");
     assert_eq!(fs::read_to_string(output.join("b.txt")).unwrap(), "EFGH");
 }
@@ -1814,13 +1573,7 @@ fn extracts_pak() {
     let pak = tmp.path().join("test.pak");
     fs::copy(&arc, &pak).unwrap();
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&pak)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), pak.to_str().unwrap()]);
     let expected = fs::read_to_string("tests/fixtures/unarc/LICENSE.unarc-rs")
         .unwrap()
         .replace("\r\n", "\n");
@@ -1842,13 +1595,7 @@ fn extracts_tlz_as_lzip() {
     let tlz = tmp.path().join("data.tlz");
     fs::copy(&archive, &tlz).unwrap();
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&tlz)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), tlz.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
 }
 
@@ -1864,13 +1611,7 @@ fn extracts_tlz_as_lzma() {
     let tlz = tmp.path().join("data.tlz");
     fs::copy(&archive, &tlz).unwrap();
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&tlz)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), tlz.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
 }
 
@@ -1883,13 +1624,7 @@ fn preserves_zip_unix_permissions() {
     let archive =
         create_zip_with_permissions(tmp.path(), "perms.zip", &[("script.sh", "echo hi", 0o755)]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar(["-d", output.to_str().unwrap(), archive.to_str().unwrap()]);
     let mode = fs::metadata(output.join("script.sh"))
         .unwrap()
         .permissions()
@@ -1903,14 +1638,12 @@ fn extracts_multiple_archives_to_same_dir() {
     let archive1 = create_tar_gz(tmp.path(), "a.tar.gz", &[("a.txt", "A")]);
     let archive2 = create_zip(tmp.path(), "b.zip", &[("b.txt", "B")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg(&archive1)
-        .arg(&archive2)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        archive1.to_str().unwrap(),
+        archive2.to_str().unwrap(),
+    ]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b.txt")).unwrap(), "B");
 }
@@ -1921,15 +1654,13 @@ fn extracts_multiple_archives_auto_dir() {
     let archive1 = create_tar_gz(tmp.path(), "a.tar.gz", &[("a.txt", "A")]);
     let archive2 = create_zip(tmp.path(), "b.zip", &[("b.txt", "B")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--auto-dir")
-        .arg(&archive1)
-        .arg(&archive2)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--auto-dir",
+        archive1.to_str().unwrap(),
+        archive2.to_str().unwrap(),
+    ]);
     assert_eq!(
         fs::read_to_string(output.join("a").join("a.txt")).unwrap(),
         "A"
@@ -1945,14 +1676,12 @@ fn extracts_single_archive_auto_dir() {
     let tmp = TempDir::new().unwrap();
     let archive = create_tar_gz(tmp.path(), "archive.tar.gz", &[("x.txt", "X")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--auto-dir")
-        .arg(&archive)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--auto-dir",
+        archive.to_str().unwrap(),
+    ]);
     assert_eq!(
         fs::read_to_string(output.join("archive").join("x.txt")).unwrap(),
         "X"
@@ -1973,16 +1702,14 @@ fn extracts_multiple_with_pattern() {
         &[("keep/b.txt", "K2"), ("drop2.txt", "D2")],
     );
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--pattern")
-        .arg("keep")
-        .arg(&archive1)
-        .arg(&archive2)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--pattern",
+        "keep",
+        archive1.to_str().unwrap(),
+        archive2.to_str().unwrap(),
+    ]);
     assert_eq!(
         fs::read_to_string(output.join("keep").join("a.txt")).unwrap(),
         "K1"
@@ -2001,15 +1728,13 @@ fn limits_are_per_archive() {
     let archive1 = create_tar(tmp.path(), "a.tar", &[("a.txt", "A")]);
     let archive2 = create_tar(tmp.path(), "b.tar", &[("b.txt", "B")]);
     let output = tmp.path().join("out");
-    Command::cargo_bin("untar")
-        .unwrap()
-        .arg("-d")
-        .arg(&output)
-        .arg("--max-entry-count=1")
-        .arg(&archive1)
-        .arg(&archive2)
-        .assert()
-        .success();
+    run_untar([
+        "-d",
+        output.to_str().unwrap(),
+        "--max-entry-count=1",
+        archive1.to_str().unwrap(),
+        archive2.to_str().unwrap(),
+    ]);
     assert_eq!(fs::read_to_string(output.join("a.txt")).unwrap(), "A");
     assert_eq!(fs::read_to_string(output.join("b.txt")).unwrap(), "B");
 }

@@ -95,18 +95,22 @@ pub fn extract_zip<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Resul
             continue;
         }
 
-        let target_path =
-            match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
-                .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
-            {
-                Some(p) => p,
-                None => {
-                    if let Some(ref pb) = progress {
-                        pb.inc(1);
-                    }
-                    continue;
+        let target_path = match resolve_conflict(
+            &entry_path,
+            options.on_exists,
+            &options.rename_suffix,
+            options.is_tty,
+        )
+        .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
+        {
+            Some(p) => p,
+            None => {
+                if let Some(ref pb) = progress {
+                    pb.inc(1);
                 }
-            };
+                continue;
+            }
+        };
 
         if let Some(parent) = target_path.parent() {
             if !parent.exists() {

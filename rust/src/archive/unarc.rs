@@ -114,8 +114,13 @@ fn extract_entry(
 
     options.limits.record_entry(entry.original_size())?;
 
-    let target_path = match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
-        .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
+    let target_path = match resolve_conflict(
+        &entry_path,
+        options.on_exists,
+        &options.rename_suffix,
+        options.is_tty,
+    )
+    .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
     {
         Some(p) => p,
         None => return Ok(false),

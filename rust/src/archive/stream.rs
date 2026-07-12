@@ -54,8 +54,13 @@ pub fn extract_stream(
 
     options.limits.record_entry(0)?;
 
-    let target_path = match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
-        .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
+    let target_path = match resolve_conflict(
+        &entry_path,
+        options.on_exists,
+        &options.rename_suffix,
+        options.is_tty,
+    )
+    .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
     {
         Some(p) => p,
         None => return Ok(()),

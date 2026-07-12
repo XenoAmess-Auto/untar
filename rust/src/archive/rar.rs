@@ -96,24 +96,26 @@ pub fn extract_rar<P: AsRef<Path>>(path: P, options: &ExtractOptions) -> Result<
                 return Ok(Box::new(io::sink()) as Box<dyn Write>);
             }
 
-            let target_path =
-                match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
-                    .with_context(|| {
-                        format!("Conflict handling failed for {}", entry_path.display())
-                    })
-                    .map_err(map_rar_err)
-                {
-                    Ok(Some(p)) => p,
-                    Ok(None) => {
-                        if let Some(ref pb) = progress {
-                            let mut count = extracted_count.borrow_mut();
-                            *count += 1;
-                            pb.inc(1);
-                        }
-                        return Ok(Box::new(io::sink()) as Box<dyn Write>);
+            let target_path = match resolve_conflict(
+                &entry_path,
+                options.on_exists,
+                &options.rename_suffix,
+                options.is_tty,
+            )
+            .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))
+            .map_err(map_rar_err)
+            {
+                Ok(Some(p)) => p,
+                Ok(None) => {
+                    if let Some(ref pb) = progress {
+                        let mut count = extracted_count.borrow_mut();
+                        *count += 1;
+                        pb.inc(1);
                     }
-                    Err(e) => return Err(e),
-                };
+                    return Ok(Box::new(io::sink()) as Box<dyn Write>);
+                }
+                Err(e) => return Err(e),
+            };
 
             if let Some(parent) = target_path.parent() {
                 if !parent.exists() {

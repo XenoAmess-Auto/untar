@@ -38,3 +38,7 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# Coverage reports
+rust/cobertura.xml
+rust/tarpaulin-report.html

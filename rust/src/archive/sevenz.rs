@@ -103,22 +103,24 @@ pub fn extract_7z<R: Read + Seek>(reader: R, options: &ExtractOptions) -> Result
                 return Ok(true);
             }
 
-            let target_path =
-                match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
-                    .with_context(|| {
-                        format!("Conflict handling failed for {}", entry_path.display())
-                    })
-                    .map_err(map_err)?
-                {
-                    Some(p) => p,
-                    None => {
-                        io::copy(reader, &mut io::sink()).map_err(map_err)?;
-                        if let Some(ref pb) = progress {
-                            pb.inc(1);
-                        }
-                        return Ok(true);
+            let target_path = match resolve_conflict(
+                &entry_path,
+                options.on_exists,
+                &options.rename_suffix,
+                options.is_tty,
+            )
+            .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))
+            .map_err(map_err)?
+            {
+                Some(p) => p,
+                None => {
+                    io::copy(reader, &mut io::sink()).map_err(map_err)?;
+                    if let Some(ref pb) = progress {
+                        pb.inc(1);
                     }
-                };
+                    return Ok(true);
+                }
+            };
 
             if let Some(parent) = target_path.parent() {
                 if !parent.exists() {

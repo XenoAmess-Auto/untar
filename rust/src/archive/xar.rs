@@ -53,13 +53,17 @@ pub fn extract_xar(file_path: &Path, options: &ExtractOptions) -> Result<()> {
         let entry_path = safe_output_path(&options.output_dir, &path)
             .with_context(|| format!("Unsafe entry path: {}", path.display()))?;
 
-        let target_path =
-            match resolve_conflict(&entry_path, options.on_exists, &options.rename_suffix)
-                .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
-            {
-                Some(p) => p,
-                None => continue,
-            };
+        let target_path = match resolve_conflict(
+            &entry_path,
+            options.on_exists,
+            &options.rename_suffix,
+            options.is_tty,
+        )
+        .with_context(|| format!("Conflict handling failed for {}", entry_path.display()))?
+        {
+            Some(p) => p,
+            None => continue,
+        };
 
         if is_dir {
             fs::create_dir_all(&target_path)?;
