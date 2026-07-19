@@ -29,7 +29,7 @@ lzma-rust2 = "0.16"
 # TAR zstd / .zst stream
 ruzstd = "0.8"
 # TAR lz4 / .lz4 stream
-lz4_flex = "0.13"
+lz4_flex = "0.14"
 # TAR brotli / .br stream
 brotli-decompressor = "5"
 # Windows Cabinet archive support
