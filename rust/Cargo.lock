@@ -1451,9 +1451,9 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
 name = "rars"
-version = "0.4.2"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c3e15a30afe552ae7a03cd69961f0866caeb45bcdde6a2e805eb3f93cbdf672"
+checksum = "0d3a6f0ce89c7d4820c4a76d2d056ab3641b26bcc5fb669e30e50b2a6eadf237"
 dependencies = [
  "aes 0.9.1",
  "aho-corasick",
