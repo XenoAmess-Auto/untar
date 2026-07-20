@@ -25,7 +25,7 @@ rars = "0.4"
 # TAR LZMA extension (raw .lzma / .tar.lzma)
 lzma-rs = "0.3"
 # TAR lzip / .lz
-lzma-rust2 = "0.16"
+lzma-rust2 = "0.17"
 # TAR zstd / .zst stream
 ruzstd = "0.8"
 # TAR lz4 / .lz4 stream
