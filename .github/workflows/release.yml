@@ -49,6 +49,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./rust
+          key: ${{ matrix.target }}-${{ hashFiles('rust/Cross.toml') }}
 
       - name: Build static binary
         run: cross build --release --target ${{ matrix.target }}
