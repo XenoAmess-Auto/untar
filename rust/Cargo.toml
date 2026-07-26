@@ -27,7 +27,7 @@ lzma-rs = "0.3"
 # TAR lzip / .lz
 lzma-rust2 = "0.18"
 # TAR zstd / .zst stream
-ruzstd = "0.8"
+ruzstd = "0.9"
 # TAR lz4 / .lz4 stream
 lz4_flex = "0.14"
 # TAR brotli / .br stream
