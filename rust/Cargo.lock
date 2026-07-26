@@ -680,9 +680,9 @@ dependencies = [
 
 [[package]]
 name = "delharc"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17e979ed4ed38829263e01880b3a1eb178319db60b5c85f6860687492cc17894"
+checksum = "9cfdcd2bee8dc367afd9064f3b0849156a4c29fc70d98370dae62773594d04dd"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -2019,7 +2019,7 @@ dependencies = [
  "clap_complete",
  "clap_mangen",
  "cpio",
- "delharc 0.7.0",
+ "delharc 0.8.0",
  "flate2",
  "gpt_disk_io",
  "gpt_disk_types",
