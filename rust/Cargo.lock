@@ -1510,9 +1510,9 @@ checksum = "323c417e1d9665a65b263ec744ba09030cfb277e9daa0b018a4ab62e57bc8189"
 
 [[package]]
 name = "rpm"
-version = "0.26.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df4c98a50f088fe2b38c86c5f05c2e56486aaf94465758e0e3e315eddba579e4"
+checksum = "bf741ddc9b770086423dce6542da0f1bcd83814fe377d4dd94fbf1d7e83e257b"
 dependencies = [
  "base64",
  "bitflags",
