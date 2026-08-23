@@ -21,7 +21,7 @@ zip = { version = "8", default-features = false, features = ["deflate", "aes-cry
 # 7z archive support
 sevenz-rust2 = "0.21.3"
 # RAR archive support
-rars = "0.6"
+rars = "0.9"
 # TAR LZMA extension (raw .lzma / .tar.lzma)
 lzma-rs = "0.3"
 # TAR lzip / .lz
