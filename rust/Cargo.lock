@@ -163,6 +163,12 @@ dependencies = [
 
 [[package]]
 name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
+name = "base64"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b25655df2c3cdd83c5e5b293b88acd880332b2ddadd7c30ac43144fdc0033da9"
@@ -1395,9 +1401,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.37.5"
+version = "0.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "331e97a1af0bf59823e6eadffe373d7b27f485be8748f71471c662c1f269b7fb"
+checksum = "41b1177fdf999d2321d3fb46ff47159d9c1fb9ad66a4879f8c50a0b504615e9b"
 dependencies = [
  "memchr",
 ]
@@ -1500,7 +1506,7 @@ version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f0a3df3191f9373a6c20bf179809ac18fa684507b4a3f570a6e5e5619bb23fc"
 dependencies = [
- "base64",
+ "base64 0.23.0",
  "bitflags",
  "bzip2",
  "digest 0.10.7",
@@ -2197,10 +2203,11 @@ dependencies = [
 
 [[package]]
 name = "xara"
-version = "0.3.2"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bef4110b070be271aa876e3e93858a49e8ae332021bd9331b2ceac6c53956a50"
+checksum = "8f6a891144e2b2d9f531a4498699a669debed2e4c6226d85ff39ebd2c78bbe0e"
 dependencies = [
+ "base64 0.22.1",
  "byteorder",
  "flate2",
  "quick-xml",

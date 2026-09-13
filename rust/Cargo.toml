@@ -44,7 +44,7 @@ iso9660-rs = "1.0"
 gpt_disk_io = { version = "0.16", features = ["std"] }
 gpt_disk_types = "0.16"
 # XAR archive support
-xara = "0.3"
+xara = "0.4"
 # LHA / LZH archive support (pinned for Rust 1.65 compatibility)
 delharc = "0.8.0"
 # SquashFS image support
