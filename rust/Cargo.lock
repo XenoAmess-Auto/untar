@@ -144,9 +144,9 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "backhand"
-version = "0.25.3"
+version = "0.25.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "716d960590d9a508e0c1ee19e68c4dac4698858bec6020355fb2707886202050"
+checksum = "7d31e52777cad2478bed31aa19eea7ce692fcbeaa0976fb8970efdc402f1302e"
 dependencies = [
  "deku",
  "flate2",
