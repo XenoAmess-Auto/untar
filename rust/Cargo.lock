@@ -863,6 +863,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpt_disk_io"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8376891e43481a65fb50bd62ae03322341c2c296af61cbf45bb033802b8e527f"
+dependencies = [
+ "bytemuck",
+ "gpt_disk_types",
+]
+
+[[package]]
 name = "gpt_disk_types"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -991,7 +1001,7 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "def06555352e65d99c0f66b98fac51b3b429fb3e261d8235a27ee20babe5b8a4"
 dependencies = [
- "gpt_disk_io",
+ "gpt_disk_io 0.16.2",
  "gpt_disk_types",
 ]
 
@@ -1917,7 +1927,7 @@ dependencies = [
  "cpio",
  "delharc",
  "flate2",
- "gpt_disk_io",
+ "gpt_disk_io 0.17.0",
  "gpt_disk_types",
  "indicatif",
  "iso9660-rs",
