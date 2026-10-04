@@ -52,7 +52,7 @@ backhand = { version = "0.25", default-features = false, features = ["gzip", "xz
 # RPM package support
 rpm = { version = "0.28", default-features = false, features = ["payload", "gzip-compression", "bzip2-compression", "xz-compression", "zstd-compression"] }
 # Legacy archive formats: ACE, ARC, ZOO, Unix compress (.Z / .tar.Z)
-unarc-rs = "0.6"
+unarc-rs = "0.7"
 # LZO1X decompression for .lzo / .tar.lzo
 lzo = "0.1"
 
