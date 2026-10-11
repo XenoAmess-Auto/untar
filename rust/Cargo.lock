@@ -1874,9 +1874,9 @@ dependencies = [
 
 [[package]]
 name = "unarc-rs"
-version = "0.7.0"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "736f43d0f415e67d5c2713c3f86003780a50af2f770445367d20a6f6a220f6f2"
+checksum = "d47b52376e95399827de38cfaabdafdf3920be076df0422f4d31b845bdf87b05"
 dependencies = [
  "bitstream-io",
  "blowfish",
