@@ -1620,6 +1620,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "sevenz-rust2"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6453a8fa345fc92002478a7ffb2102ebd0ce26f138bdd5746f0a53b3a84f14b"
+dependencies = [
+ "aes",
+ "bzip2",
+ "cbc",
+ "crc32fast",
+ "getrandom",
+ "js-sys",
+ "lzma-rust2 0.22.0",
+ "ppmd-rust",
+ "sha2 0.11.0",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "sha1"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1895,7 +1913,7 @@ dependencies = [
  "log",
  "rars 0.9.4",
  "salzweg",
- "sevenz-rust2",
+ "sevenz-rust2 0.23.0",
  "sha1 0.11.0",
  "tar",
  "thiserror",
@@ -1953,7 +1971,7 @@ dependencies = [
  "rars 0.10.2",
  "rpm",
  "ruzstd",
- "sevenz-rust2",
+ "sevenz-rust2 0.24.0",
  "tar",
  "tempfile",
  "unarc-rs",
