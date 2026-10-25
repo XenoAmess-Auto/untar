@@ -1129,6 +1129,12 @@ name = "lzma-rust2"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7277c9742229dc25243236d578b6471a798c554512c6f6a04365ec2e87c2a3bb"
+
+[[package]]
+name = "lzma-rust2"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1c46f3fcd2e888afdb01a07efc071cb21300e07c68d32c3e8b01b5c8cb1fcaa"
 dependencies = [
  "sha2 0.11.0",
 ]
@@ -1964,7 +1970,7 @@ dependencies = [
  "liblzma",
  "lz4_flex",
  "lzma-rs",
- "lzma-rust2 0.22.0",
+ "lzma-rust2 0.23.0",
  "lzo",
  "lzokay",
  "predicates",
