@@ -1500,9 +1500,9 @@ checksum = "323c417e1d9665a65b263ec744ba09030cfb277e9daa0b018a4ab62e57bc8189"
 
 [[package]]
 name = "rpm"
-version = "0.28.0"
+version = "0.30.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f0a3df3191f9373a6c20bf179809ac18fa684507b4a3f570a6e5e5619bb23fc"
+checksum = "be2e77d9761a6204fd002de1e80f8962c6a96b12e50d25864f5a4435cfc09f24"
 dependencies = [
  "base64",
  "bitflags",
@@ -1526,7 +1526,7 @@ dependencies = [
  "sha3",
  "thiserror",
  "zeroize",
- "zstd 0.13.3",
+ "zstd 0.14.3",
 ]
 
 [[package]]
