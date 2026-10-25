@@ -1429,22 +1429,6 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
 name = "rars"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0665518097392be04a322dec9eba41e88028f6aca85f5d61f8abb068691f2266"
-dependencies = [
- "aes",
- "aho-corasick",
- "getrandom",
- "hmac",
- "rayon",
- "sha1 0.11.0",
- "sha2 0.11.0",
- "zeroize",
-]
-
-[[package]]
-name = "rars"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2670e328f4b9a711365825dbbc2b14c968b4249a0ed65a64729e77ede7826e6c"
@@ -1905,7 +1889,7 @@ dependencies = [
  "log",
  "lzma-rust2 0.22.0",
  "lzxd",
- "rars 0.11.0",
+ "rars",
  "ruzstd",
  "salzweg",
  "sevenz-rust2",
@@ -1963,7 +1947,7 @@ dependencies = [
  "lzo",
  "lzokay",
  "predicates",
- "rars 0.10.2",
+ "rars",
  "rpm",
  "ruzstd",
  "sevenz-rust2",
