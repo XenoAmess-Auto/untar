@@ -542,9 +542,9 @@ checksum = "338089f42c427b86394a5ee60ff321da23a5c89c9d89514c829687b26359fcff"
 
 [[package]]
 name = "crc32fast"
-version = "1.5.2"
+version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01a7799fd6b852db0e61728dde9a204c423b44d689dbd432522543614b490e78"
+checksum = "0ba106e844045ddc02c20768ac4b0b7cb45f2cc2ecbd833ac9f5dacb183c2055"
 dependencies = [
  "cfg-if",
 ]
@@ -1119,15 +1119,6 @@ dependencies = [
 
 [[package]]
 name = "lzma-rust2"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7277c9742229dc25243236d578b6471a798c554512c6f6a04365ec2e87c2a3bb"
-dependencies = [
- "sha2 0.11.0",
-]
-
-[[package]]
-name = "lzma-rust2"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1c46f3fcd2e888afdb01a07efc071cb21300e07c68d32c3e8b01b5c8cb1fcaa"
@@ -1444,6 +1435,23 @@ checksum = "2670e328f4b9a711365825dbbc2b14c968b4249a0ed65a64729e77ede7826e6c"
 dependencies = [
  "aes",
  "aho-corasick",
+ "getrandom",
+ "hmac",
+ "rayon",
+ "sha1 0.11.0",
+ "sha2 0.11.0",
+ "zeroize",
+]
+
+[[package]]
+name = "rars"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8cfe43d4831a02f45c89f11a84fb32b45e818e8914396038cf3494501041f95"
+dependencies = [
+ "aes",
+ "aho-corasick",
+ "crc32fast",
  "getrandom",
  "hmac",
  "rayon",
@@ -1883,9 +1891,9 @@ dependencies = [
 
 [[package]]
 name = "unarc-rs"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85b456a97da3daaa590facb2b2ac05c658148d0acc14ad53caf47bfd7b228975"
+checksum = "76dbdf523293e3ebd5ebc20c62dabd76a10f2288ad33b6a5fb3c112d91924e18"
 dependencies = [
  "bitstream-io",
  "blowfish",
@@ -1896,16 +1904,16 @@ dependencies = [
  "delharc",
  "flate2",
  "log",
- "lzma-rust2 0.22.0",
+ "lzma-rust2 0.24.0",
  "lzxd",
- "rars",
+ "rars 0.12.3",
  "ruzstd",
  "salzweg",
  "sevenz-rust2",
  "sha1 0.11.0",
  "tar",
  "thiserror",
- "zip 9.1.0",
+ "zip 9.2.1",
 ]
 
 [[package]]
@@ -1956,7 +1964,7 @@ dependencies = [
  "lzo",
  "lzokay",
  "predicates",
- "rars",
+ "rars 0.11.0",
  "rpm",
  "ruzstd",
  "sevenz-rust2",
@@ -2228,9 +2236,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.1.0"
+version = "9.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2886b00003a72c4ccee3f42cfc34908d33b2508a74d827dc2a4244706475c704"
+checksum = "848dad21639597378c3be94c59fd4de683f0f6d8a5387575896e1245737d4f37"
 dependencies = [
  "aes",
  "bitstream-io",
