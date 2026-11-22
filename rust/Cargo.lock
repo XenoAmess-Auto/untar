@@ -122,6 +122,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d67af77d68a931ecd5cbd8a3b5987d63a1d1d1278f7f6a60ae33db485cdebb69"
 
 [[package]]
+name = "arrayvec"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
+
+[[package]]
 name = "assert_cmd"
 version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -198,6 +204,16 @@ dependencies = [
  "radium",
  "tap",
  "wyz",
+]
+
+[[package]]
+name = "blake2s_simd"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2380c0236432f7b22a70229df30f218f5293870c056beb76f5ca068e3273a366"
+dependencies = [
+ "arrayvec",
+ "constant_time_eq 0.4.2",
 ]
 
 [[package]]
@@ -1454,6 +1470,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "rars"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1da01c12cc3255e4c42fbd643820efad0c179e98362770f992eff6ba436cba3c"
+dependencies = [
+ "aes",
+ "aho-corasick",
+ "blake2s_simd",
+ "crc32fast",
+ "getrandom",
+ "hmac",
+ "libc",
+ "rayon",
+ "sha1 0.11.0",
+ "sha2 0.11.0",
+ "zeroize",
+]
+
+[[package]]
 name = "rayon"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1917,7 +1952,7 @@ dependencies = [
  "log",
  "lzma-rust2 0.24.0",
  "lzxd",
- "rars",
+ "rars 0.12.4",
  "ruzstd",
  "salzweg",
  "sevenz-rust2 0.24.2",
@@ -1975,7 +2010,7 @@ dependencies = [
  "lzo",
  "lzokay",
  "predicates",
- "rars",
+ "rars 0.13.0",
  "rpm",
  "ruzstd",
  "sevenz-rust2 0.25.0",
